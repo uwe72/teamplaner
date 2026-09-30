@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: teamplaner-backend
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:gassi}
+    driver-class-name: org.postgresql.Driver
+    username: ${POSTGRES_USER:gassi}
+    password: ${DB_PASSWORD:gassi}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+logging:
+  pattern:
+    console: "%d{dd.MM.yyyy - HH:mm:ss 'Uhr'} %5p --- [%15.15t] %-40.40logger{39} : %m%n"
