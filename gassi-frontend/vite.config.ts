@@ -82,7 +82,6 @@ export default defineConfig({
       workbox: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        globIgnores: ['**/background2627.png', '**/hero-banner.png'],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {

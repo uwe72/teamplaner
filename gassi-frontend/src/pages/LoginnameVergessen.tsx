@@ -30,7 +30,7 @@ export default function LoginnameVergessen() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center py-12 px-4 overflow-hidden bg-background">
-      <img src="/background2627.png" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
+      <img src="/background.jpg" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
       <div className="img-overlay" />
 
       <div className="relative bg-surface/70 backdrop-blur-md border border-border rounded-card w-full max-w-[440px] flex flex-col shadow-2xl gassi-login-enter">

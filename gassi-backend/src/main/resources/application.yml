@@ -9,6 +9,11 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
 
 server:
   port: 8080
@@ -37,6 +42,12 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 1d
+          cache-public: true
 
 logging:
   pattern:

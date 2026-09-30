@@ -104,7 +104,6 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
 
   const mitglieder = mitgliederAbfrage.data ?? []
   const bearbeite = mitglieder.find(m => m.id === bearbeiteId) ?? null
-
   return (
     <div className="min-h-0">
       <Tabs
@@ -127,17 +126,11 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
             </Button>
           }
         >
-        {fehler && (
-          <div className="mx-6 mt-4 bg-danger/10 border border-danger rounded-card p-4">
-            <p className="text-danger text-sm font-medium">{fehler}</p>
-          </div>
-        )}
         {meldung && (
           <div className="mx-6 mt-4 bg-success-bg border border-success/30 rounded-card p-4">
             <p className="text-success text-sm font-medium">{meldung}</p>
           </div>
         )}
-
         <TableContent>
           <table className="w-full">
             <TableHead>
@@ -194,6 +187,7 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
           <MitgliedAnlegen
             onAnlegen={mitgliedAnlegen}
             onAbbrechen={() => setNeuOffen(false)}
+            fehler={fehler}
           />
         </Dialog>
       )}
@@ -204,6 +198,7 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
             mitglied={bearbeite}
             onSpeichern={(anfrage, passwort) => mitgliedSpeichern(bearbeite.id, { ...anfrage, passwort: passwort || undefined })}
             onAbbrechen={() => setBearbeiteId(null)}
+            fehler={bearbeiteId !== null ? fehler : null}
           />
         </Dialog>
       )}
@@ -238,10 +233,12 @@ function MitgliedBearbeiten({
   mitglied,
   onSpeichern,
   onAbbrechen,
+  fehler,
 }: {
   mitglied: Teammitglied
   onSpeichern: (anfrage: { anzeigename: string; farbe: string; email: string; rolle: string; aktiv: boolean }, passwort: string) => Promise<void>
   onAbbrechen: () => void
+  fehler: string | null
 }) {
   const [entwurf, setEntwurf] = useState({
     anzeigename: mitglied.anzeigename,
@@ -256,6 +253,11 @@ function MitgliedBearbeiten({
   return (
     <div>
       <h2 className="text-[16px] font-medium text-foreground mb-4">Mitglied bearbeiten — {mitglied.anzeigename}</h2>
+      {fehler && (
+        <div className="mb-4 bg-danger/10 border border-danger rounded-card p-4">
+          <p className="text-danger text-sm font-medium">{fehler}</p>
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="block text-sm text-muted mb-1">Anzeigename <span className="text-muted">*</span></label>
@@ -327,9 +329,11 @@ function MitgliedBearbeiten({
 function MitgliedAnlegen({
   onAnlegen,
   onAbbrechen,
+  fehler,
 }: {
   onAnlegen: (a: { login: string; email: string; passwort: string; anzeigename: string; farbe: string; rolle: Rolle }) => Promise<void>
   onAbbrechen: () => void
+  fehler: string | null
 }) {
   const loginRef = useRef<HTMLInputElement>(null)
   const [login, setLogin] = useState('')
@@ -347,6 +351,11 @@ function MitgliedAnlegen({
   return (
     <div>
       <h2 className="text-[16px] font-medium text-foreground mb-4">Neues Teammitglied</h2>
+      {fehler && (
+        <div className="mb-4 bg-danger/10 border border-danger rounded-card p-4">
+          <p className="text-danger text-sm font-medium">{fehler}</p>
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="block text-sm text-muted mb-1">Loginname <span className="text-muted">*</span></label>

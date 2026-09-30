@@ -43,7 +43,7 @@ export default function Login() {
   return (
     <div className="relative min-h-screen flex items-center justify-center py-12 px-4 overflow-hidden bg-background">
       <img
-        src="/background2627.png"
+        src="/background.jpg"
         alt=""
         aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover"
