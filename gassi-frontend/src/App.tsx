@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useSitzung } from './api/client'
 import Login from './pages/Login'
 import Registrierung from './pages/Registrierung'
@@ -11,6 +12,7 @@ import Verwaltung from './pages/Verwaltung'
 import StatistikSeite from './pages/StatistikSeite'
 import ProfilSeite from './pages/Profil'
 import Super from './pages/Super'
+import useBereiche from './hooks/useBereiche'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -36,7 +38,8 @@ export default function App() {
             : <Navigate to="/login" replace />
         }>
           <Route index element={<Navigate to={istSuper ? '/super' : '/plan'} replace />} />
-          <Route path="plan" element={<ProtectedRoute><Plan /></ProtectedRoute>} />
+          <Route path="plan" element={<ProtectedRoute><PlanRedirect /></ProtectedRoute>} />
+          <Route path="plan/:bereichId" element={<ProtectedRoute><Plan /></ProtectedRoute>} />
           <Route path="verwaltung" element={<Navigate to="/verwaltung/teammitglieder" replace />} />
           <Route path="verwaltung/teammitglieder" element={
             <ProtectedRoute requiredRole="ADMIN"><Verwaltung tab="mitglieder" /></ProtectedRoute>
@@ -64,4 +67,20 @@ function RedirectNachLogin({ person }: { person: { rolle: string; teamId: number
     return <Navigate to="/registrierung/team" replace />
   }
   return <Navigate to="/plan" replace />
+}
+
+function PlanRedirect() {
+  const navigate = useNavigate()
+  const { data: bereiche, isLoading } = useBereiche()
+  const aktive = (bereiche ?? []).filter(b => b.aktiv)
+  const ersteAktive = aktive[0]
+
+  useEffect(() => {
+    if (!isLoading && ersteAktive) {
+      navigate(`/plan/${ersteAktive.id}`, { replace: true })
+    }
+  }, [isLoading, ersteAktive, navigate])
+
+  if (!isLoading && ersteAktive) return null
+  return <Plan />
 }

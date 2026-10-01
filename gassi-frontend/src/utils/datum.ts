@@ -3,6 +3,25 @@ export default function tagLabel(datum: string): string {
   return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })
 }
 
+export function wochentagKurz(datum: string): string {
+  const d = new Date(datum + 'T12:00:00')
+  return d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '')
+}
+
+export function tagKurz(datum: string): string {
+  const d = new Date(datum + 'T12:00:00')
+  return `${d.getDate()}.`
+}
+
+export function wochenbereich(woche: IsoWoche): string {
+  const format = (d: Date, mitJahr: boolean) =>
+    d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', ...(mitJahr ? { year: 'numeric' } : {}) })
+  const montag = isoMontag(woche.isoJahr, woche.isoWoche)
+  const sonntag = new Date(montag)
+  sonntag.setUTCDate(montag.getUTCDate() + 6)
+  return `${format(montag, false)} - ${format(sonntag, true)}`
+}
+
 export interface IsoWoche {
   isoJahr: number
   isoWoche: number

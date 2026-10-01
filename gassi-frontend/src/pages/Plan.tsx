@@ -1,21 +1,27 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import api from '../api/client'
 import { aktivesTeamId, aktivesTeamName, sitzungLaden } from '../api/client'
-import type { Bereich, FehlerAntwort, PlanDto } from '../types'
-import { aktuelleIsoWocheJetzt, heutigesDatum, isoNummer, verschiebeIsoWoche, type IsoWoche } from '../utils/datum'
+import api from '../api/client'
+import type { FehlerAntwort, PlanDto } from '../types'
+import { aktuelleIsoWocheJetzt, heutigesDatum, isoNummer, verschiebeIsoWoche, wochenbereich, type IsoWoche } from '../utils/datum'
 import { holeEigeneId } from '../utils/eigeneId'
 import useIsMobile from '../hooks/useIsMobile'
+import useBereiche from '../hooks/useBereiche'
 import PersonenLeiste from '../components/PersonenLeiste'
 import PlanRaster from '../components/PlanRaster'
+import PlanRasterMobil from '../components/PlanRasterMobil'
 import AuswahlOverlay from '../components/AuswahlOverlay'
 import CardContainer from '../components/CardContainer'
 import Button from '../components/Button'
+import useHorizontalSwipe from '../hooks/useHorizontalSwipe'
 
 export default function Plan() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const params = useParams()
   const teamId = aktivesTeamId()
   const person = sitzungLaden()?.person
   const eigeneId = holeEigeneId()
@@ -23,7 +29,8 @@ export default function Plan() {
   const isMobile = useIsMobile()
 
   const [fokus, setFokus] = useState<IsoWoche | null>(null)
-  const [bereichId, setBereichId] = useState<number | null>(null)
+  const urlBereichId = params.bereichId ? Number(params.bereichId) : null
+  const bereichId = urlBereichId != null && Number.isFinite(urlBereichId) ? urlBereichId : null
   const [hinweis, setHinweis] = useState<string | null>(null)
   const [overlay, setOverlay] = useState<
     | { typ: 'aufgabe'; aufgabeId: number; datum: string; belegterName: string | null }
@@ -31,17 +38,16 @@ export default function Plan() {
     | null
   >(null)
 
-  const bereicheAbfrage = useQuery<Bereich[]>({
-    queryKey: ['bereiche', teamId],
-    queryFn: () => api.get(`/teams/${teamId}/bereiche`).then(r => r.data),
-    enabled: teamId != null,
-  })
+  const bereicheAbfrage = useBereiche()
 
   useEffect(() => {
-    if (!bereichId && bereicheAbfrage.data && bereicheAbfrage.data.length > 0) {
-      setBereichId(bereicheAbfrage.data[0].id)
+    if (bereichId == null || !bereicheAbfrage.data) return
+    const aktive = bereicheAbfrage.data.filter(b => b.aktiv)
+    if (aktive.length === 0) return
+    if (!aktive.some(b => b.id === bereichId)) {
+      navigate(`/plan/${aktive[0].id}`, { replace: true })
     }
-  }, [bereicheAbfrage.data, bereichId])
+  }, [bereicheAbfrage.data, bereichId, navigate])
 
   const zielWoche = fokus ?? aktuelleIsoWocheJetzt()
   const heute = heutigesDatum()
@@ -56,7 +62,7 @@ export default function Plan() {
   })
 
   const sensoren = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } })
   )
 
@@ -136,21 +142,30 @@ export default function Plan() {
     queryClient.invalidateQueries({ queryKey: ['plan'] })
   }
 
-  const wocheLabel = useMemo(() => `KW ${zielWoche.isoWoche}/${zielWoche.isoJahr}`, [zielWoche])
+  const wocheLabel = useMemo(() => `KW ${zielWoche.isoWoche}/${zielWoche.isoJahr} (${wochenbereich(zielWoche)})`, [zielWoche])
+  const swipeRef = useHorizontalSwipe(
+    () => setFokus(verschiebeIsoWoche(zielWoche, 1)),
+    () => setFokus(verschiebeIsoWoche(zielWoche, -1)),
+    isMobile
+  )
 
   if (teamId == null) {
     return <div className="card p-4 text-sm text-muted">Kein Team-Kontext — bitte neu anmelden.</div>
   }
 
   const aktiveBereiche = (bereicheAbfrage.data ?? []).filter(b => b.aktiv)
+  const bereichName = bereichId ? aktiveBereiche.find(b => b.id === bereichId)?.name ?? '' : ''
+  const istSumme = planAbfrage.data?.mitglieder.reduce((s, m) => s + m.ist, 0) ?? 0
+  const sollSumme = planAbfrage.data?.mitglieder.reduce((s, m) => s + m.soll, 0) ?? 0
+  const istSollUnterschritten = planAbfrage.data?.mitglieder.some(m => m.sollUnterschritten) ?? false
   const istAktuelleWoche = isoNummer(zielWoche) === isoNummer(aktuelleIsoWocheJetzt())
   const wocheTitel = istAktuelleWoche
     ? 'aktuelle Woche'
     : isoNummer(zielWoche) < isoNummer(aktuelleIsoWocheJetzt()) ? 'vergangene Woche' : 'zukünftige Woche'
 
   return (
-    <div className="md:h-full md:flex md:flex-col md:min-h-0">
-      {aktivesTeamName() && (
+    <div ref={swipeRef} className="md:h-full md:flex md:flex-col md:min-h-0">
+      {!isMobile && aktivesTeamName() && (
         <div className="card px-4 py-2.5 text-sm mb-4 flex items-center justify-between" style={{ backgroundColor: 'var(--color-info-bg)' }}>
           <span>
             <span className="text-muted">Team: </span>
@@ -158,7 +173,7 @@ export default function Plan() {
             <span className="text-muted ml-3">·</span>
             <span className="font-semibold ml-3">{wocheLabel}</span>
           </span>
-          <span className="text-xs text-muted">Woche {wocheLabel} — {wocheTitel}</span>
+          <span className="text-xs text-muted">{wocheTitel}</span>
         </div>
       )}
 
@@ -169,67 +184,105 @@ export default function Plan() {
         </div>
       )}
 
-      {aktiveBereiche.length > 1 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1 mb-2">
-          {aktiveBereiche.map(b => (
-            <button
-              key={b.id}
-              type="button"
-              onClick={() => setBereichId(b.id)}
-              className={`px-3 py-1.5 text-xs font-medium whitespace-nowrap rounded-control border transition-colors ${bereichId === b.id ? 'bg-primary text-primary-foreground border-transparent' : 'bg-surface text-muted border-border hover:bg-card-hover'}`}
-            >
-              {b.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <CardContainer
-        title={`Wochenplan ${bereichId ? `— ${aktiveBereiche.find(b => b.id === bereichId)?.name ?? ''}` : ''}`}
-        headerRight={
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, -1))} aria-label="Vorherige Woche">
-              <ChevronLeft size={16} />
-            </Button>
-            <button
-              className="text-xs text-muted hover:text-foreground underline underline-offset-2 disabled:opacity-50 disabled:no-underline"
-              disabled={istAktuelleWoche}
-              onClick={() => setFokus(null)}
-            >
-              aktuelle Woche
-            </button>
-            <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, 1))} aria-label="Nächste Woche">
-              <ChevronRight size={16} />
-            </Button>
-          </div>
-        }
-      >
-        {planAbfrage.isLoading || !planAbfrage.data ? (
-          <div className="text-center py-8 text-muted">{planAbfrage.isLoading ? 'Laden...' : 'Kein Plan — lege zuerst einen Bereich und Aufgaben an.'}</div>
-        ) : (
-          <DndContext sensors={sensoren} onDragEnd={beimAblegen}>
-            <div className={isMobile ? 'space-y-4' : ''}>
-              <div className="px-4 md:px-6 pt-4">
-                <PersonenLeiste mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} />
-              </div>
-              <PlanRaster
-                plan={planAbfrage.data}
-                aktionen={{
-                  eigeneId,
-                  istAdmin: !!istAdmin,
-                  heute,
-                  onBoxKlick: (aufgabeId, datum, belegterName) => setOverlay({ typ: 'aufgabe', aufgabeId, datum, belegterName }),
-                  onZeitfensterKlick: (zeitfensterId, datum) => {
-                    const gruppe = planAbfrage.data?.gruppen.find(g => g.zeitfensterId === zeitfensterId)
-                    if (!gruppe) return
-                    setOverlay({ typ: 'zeitfenster', zeitfensterId, zeitfensterName: gruppe.zeitfensterName, datum })
-                  },
+      <DndContext sensors={sensoren} onDragEnd={beimAblegen}>
+      {isMobile ? (
+        <div className="px-3 pt-2 pb-1 flex flex-col gap-1.5">
+          <div className="bg-card border border-border rounded-card px-3 py-2 mb-1 flex flex-col gap-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm font-semibold text-foreground truncate">
+                {wocheLabel}
+              </span>
+              <span className="truncate" />
+              <button
+                className="inline-flex items-center shrink-0 ml-auto px-2 h-6 rounded-badge text-[11px] font-bold uppercase tracking-wide"
+                style={{
+                  backgroundColor: istAktuelleWoche ? 'var(--color-accent)' : 'var(--color-accent-soft)',
+                  color: istAktuelleWoche ? '#fff' : 'var(--color-accent)',
+                  border: istAktuelleWoche ? 'none' : '1px solid var(--color-accent-ring)',
                 }}
-              />
+                disabled={istAktuelleWoche}
+                onClick={() => setFokus(null)}
+              >
+                {wocheTitel}
+              </button>
+              {planAbfrage.data && (
+                <span
+                  className="inline-flex items-center justify-center px-2 h-6 rounded-badge text-[11px] font-bold tabular-nums shrink-0"
+                  style={{
+                    backgroundColor: istSollUnterschritten ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
+                    color: istSollUnterschritten ? 'var(--color-danger)' : 'var(--color-success)',
+                  }}
+                  title={`Ist ${istSumme}, Soll ${sollSumme} im Bereich ${bereichName}`}
+                >
+                  {istSumme}/{sollSumme}
+                </span>
+              )}
             </div>
-          </DndContext>
-        )}
-      </CardContainer>
+          </div>
+          {planAbfrage.data && (
+            <PersonenLeiste mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} label={false} kompakt />
+          )}
+        </div>
+      ) : null}
+
+      <div style={isMobile ? { touchAction: 'pan-y' } : undefined}>
+        <CardContainer
+          className={isMobile ? 'max-md:bg-transparent max-md:border-0 max-md:shadow-none' : ''}
+          title={isMobile ? null : `Wochenplan ${bereichName ? `— ${bereichName}` : ''}`}
+          headerRight={isMobile ? null : (
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, -1))} aria-label="Vorherige Woche">
+                <ChevronLeft size={16} />
+              </Button>
+              <button
+                className="text-xs text-muted hover:text-foreground underline underline-offset-2 disabled:opacity-50 disabled:no-underline"
+                disabled={istAktuelleWoche}
+                onClick={() => setFokus(null)}
+              >
+                aktuelle Woche
+              </button>
+              <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, 1))} aria-label="Nächste Woche">
+                <ChevronRight size={16} />
+              </Button>
+            </div>
+          )}
+        >
+          {planAbfrage.isLoading || !planAbfrage.data ? (
+            <div className="text-center py-8 text-muted">{planAbfrage.isLoading ? 'Laden...' : 'Kein Plan — lege zuerst einen Bereich und Aufgaben an.'}</div>
+          ) : isMobile ? (
+            <PlanRasterMobil
+              plan={planAbfrage.data}
+              aktionen={{
+                eigeneId,
+                istAdmin: !!istAdmin,
+                heute,
+                onBoxKlick: (aufgabeId, datum, belegterName) => setOverlay({ typ: 'aufgabe', aufgabeId, datum, belegterName }),
+                onZeitfensterKlick: (zeitfensterId, datum) => {
+                  const gruppe = planAbfrage.data?.gruppen.find(g => g.zeitfensterId === zeitfensterId)
+                  if (!gruppe) return
+                  setOverlay({ typ: 'zeitfenster', zeitfensterId, zeitfensterName: gruppe.zeitfensterName, datum })
+                },
+              }}
+            />
+          ) : (
+            <PlanRaster
+              plan={planAbfrage.data}
+              aktionen={{
+                eigeneId,
+                istAdmin: !!istAdmin,
+                heute,
+                onBoxKlick: (aufgabeId, datum, belegterName) => setOverlay({ typ: 'aufgabe', aufgabeId, datum, belegterName }),
+                onZeitfensterKlick: (zeitfensterId, datum) => {
+                  const gruppe = planAbfrage.data?.gruppen.find(g => g.zeitfensterId === zeitfensterId)
+                  if (!gruppe) return
+                  setOverlay({ typ: 'zeitfenster', zeitfensterId, zeitfensterName: gruppe.zeitfensterName, datum })
+                },
+              }}
+            />
+          )}
+        </CardContainer>
+      </div>
+      </DndContext>
 
       {overlay && planAbfrage.data && (
         overlay.typ === 'aufgabe' ? (

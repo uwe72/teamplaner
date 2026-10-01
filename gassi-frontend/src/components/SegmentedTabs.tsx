@@ -14,7 +14,7 @@ export default function SegmentedTabs({ items, active, onChange, className = '' 
   return (
     <div
       role="group"
-      className={`inline-flex w-full sm:w-auto rounded-control border border-border-strong bg-elevated p-0.5 ${className}`}
+      className={`inline-flex w-auto rounded-control border border-border-strong bg-elevated p-0.5 ${className}`}
     >
       {items.map(item => {
         const isActive = item.key === active

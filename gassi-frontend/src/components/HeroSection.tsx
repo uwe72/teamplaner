@@ -1,5 +1,7 @@
+import { useMatch } from 'react-router-dom'
 import Badge from './Badge'
 import { aktivesTeamName, sitzungLaden } from '../api/client'
+import useBereiche from '../hooks/useBereiche'
 
 interface HeroSectionProps {
   collapsed: boolean
@@ -16,6 +18,11 @@ function getGreeting(): string {
 export default function HeroSection({ collapsed, onMenuClick }: HeroSectionProps) {
   const teamName = aktivesTeamName()
   const personName = sitzungLaden()?.person.anzeigename ?? 'Gast'
+  const planMatch = useMatch('/plan/:bereichId')
+  const bereicheAbfrage = useBereiche()
+  const bereichName = planMatch
+    ? (bereicheAbfrage.data ?? []).find(b => b.id === Number(planMatch.params.bereichId))?.name ?? null
+    : null
 
   return (
     <div className="hero relative h-[80px] md:h-[102px] shrink-0 overflow-hidden bg-header">
@@ -48,8 +55,9 @@ export default function HeroSection({ collapsed, onMenuClick }: HeroSectionProps
               {getGreeting()}, {personName}!
             </p>
             {teamName && (
-              <div className="flex items-center gap-3 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 min-w-0">
                 <Badge variant="solid">{teamName}</Badge>
+                {bereichName && <Badge variant="solid">{bereichName}</Badge>}
               </div>
             )}
           </div>

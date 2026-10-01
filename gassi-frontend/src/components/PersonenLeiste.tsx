@@ -4,9 +4,13 @@ import type { MitgliedPlanInfo } from '../types'
 export default function PersonenLeiste({
   mitglieder,
   eigeneId,
+  label = true,
+  kompakt = false,
 }: {
   mitglieder: MitgliedPlanInfo[]
   eigeneId: number
+  label?: boolean
+  kompakt?: boolean
 }) {
   const sortiert = [...mitglieder].sort((a, b) => {
     if (a.id === eigeneId) return -1
@@ -16,24 +20,26 @@ export default function PersonenLeiste({
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.06em] text-subtle mb-2">
-        Teammitglieder — auf eine Zelle ziehen oder antippen
-      </p>
-      <div className="flex gap-3 flex-wrap">
-        {sortiert.map(m => <PersonChip key={m.id} m={m} />)}
+      {label && (
+        <p className="text-xs font-semibold uppercase tracking-[0.06em] text-subtle mb-2">
+          Teammitglieder — auf eine Zelle ziehen oder antippen
+        </p>
+      )}
+      <div className={kompakt ? 'flex gap-1.5 flex-nowrap overflow-x-auto' : 'flex gap-3 flex-wrap'}>
+        {sortiert.map(m => <PersonChip key={m.id} m={m} kompakt={kompakt} />)}
       </div>
     </div>
   )
 }
 
-function PersonChip({ m }: { m: MitgliedPlanInfo }) {
+function PersonChip({ m, kompakt }: { m: MitgliedPlanInfo; kompakt: boolean }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `karte-${m.id}` })
   return (
     <button
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`inline-flex items-center gap-2 h-6 px-2.5 text-xs font-medium whitespace-nowrap rounded-badge border transition-colors`}
+      className={`inline-flex items-center text-xs font-medium whitespace-nowrap rounded-badge border transition-colors ${kompakt ? 'gap-1.5 h-7 px-2 shrink-0' : 'gap-2 h-6 px-2.5'}`}
       style={{
         transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
         backgroundColor: `${m.farbe}1f`,
