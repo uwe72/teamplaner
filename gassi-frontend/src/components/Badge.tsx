@@ -20,9 +20,11 @@ const variantClasses: Record<string, string> = {
   solid: 'bg-primary text-primary-foreground rounded-badge',
 }
 
-export default function Badge({ children, variant = 'accent' }: BadgeProps) {
+export default function Badge({ children, variant = 'accent', bordered = false }: BadgeProps & { bordered?: boolean }) {
   return (
-    <span className={`inline-flex items-center justify-center h-6 px-2.5 text-xs font-medium leading-none whitespace-nowrap ${variantClasses[variant]}`}>
+    <span
+      className={`inline-flex items-center justify-center h-6 px-2.5 text-xs font-medium leading-none whitespace-nowrap ${bordered ? 'border border-border-hover' : ''} ${variantClasses[variant]}`}
+    >
       {children}
     </span>
   )

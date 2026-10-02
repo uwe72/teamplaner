@@ -618,6 +618,25 @@ body {
   animation: ffl-login-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes badge-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.badge-blink {
+  animation: badge-blink 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-blink {
+    animation: none;
+  }
+}
+
 @keyframes stat-rise {
   from {
     opacity: 0;

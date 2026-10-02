@@ -23,17 +23,17 @@ export default function StatistikChips({
         const monat = monatlich.find(m => m.mitgliedId === w.mitgliedId)
         const gesamt = kumuliert.find(k => k.mitgliedId === w.mitgliedId)
         const soll = sollWerte?.[w.mitgliedId]
+        const unterschritten = soll != null ? w.ist < soll : w.ist < w.moeglich
         return (
           <span
             key={w.mitgliedId}
-            className={`inline-flex items-center whitespace-nowrap rounded-badge border tabular-nums ${kompakt ? 'gap-1.5 h-6 px-1.5 text-[11px]' : 'gap-2 h-6 px-2 text-xs'} ${w.aktiv ? 'bg-accent-soft border-border-hover text-foreground' : 'bg-subtle-bg border-border text-subtle'}`}
+            className={`inline-flex items-center whitespace-nowrap rounded-badge border tabular-nums ${kompakt ? 'gap-1.5 h-6 px-1.5 text-[11px]' : 'gap-2 h-6 px-2 text-xs'} ${unterschritten ? 'bg-danger-bg border-danger-hover text-danger badge-blink' : w.aktiv ? 'bg-accent-soft border-border-hover text-foreground' : 'bg-subtle-bg border-border text-subtle'}`}
             title={
               `Woche ${w.ist}/${soll ?? w.moeglich} (${prozent(w.prozent)})`
               + ` · Monat ${monat?.ist ?? 0}/${monat?.moeglich ?? 0} (${prozent(monat?.prozent ?? 0)})`
               + ` · Gesamt ${gesamt?.ist ?? 0}/${gesamt?.moeglich ?? 0} (${prozent(gesamt?.prozent ?? 0)})`
             }
           >
-            <span className={`w-2 h-2 rounded-full shrink-0 ${w.aktiv ? 'bg-accent' : 'bg-subtle'}`} />
             <span className="font-semibold">{initialen(w.anzeigename)}</span>
             <span className="font-bold">{w.ist}/{soll ?? w.moeglich}</span>
           </span>

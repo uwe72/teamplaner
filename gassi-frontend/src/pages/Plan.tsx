@@ -15,6 +15,7 @@ import PlanRasterMobil from '../components/PlanRasterMobil'
 import AufgabenZeilenOverlay from '../components/AufgabenZeilenOverlay'
 import CardContainer from '../components/CardContainer'
 import Button from '../components/Button'
+import Badge from '../components/Badge'
 import StatistikChips from '../components/StatistikChips'
 import useHorizontalSwipe from '../hooks/useHorizontalSwipe'
 
@@ -160,26 +161,25 @@ export default function Plan() {
 
   const aktiveBereiche = (bereicheAbfrage.data ?? []).filter(b => b.aktiv)
   const bereichName = bereichId ? aktiveBereiche.find(b => b.id === bereichId)?.name ?? '' : ''
-  const istSumme = planAbfrage.data?.mitglieder.reduce((s, m) => s + m.ist, 0) ?? 0
-  const sollSumme = planAbfrage.data?.mitglieder.reduce((s, m) => s + m.soll, 0) ?? 0
-  const istSollUnterschritten = planAbfrage.data?.mitglieder.some(m => m.sollUnterschritten) ?? false
   const istAktuelleWoche = isoNummer(zielWoche) === isoNummer(aktuelleIsoWocheJetzt())
   const wocheTitel = istAktuelleWoche
     ? 'aktuell'
     : isoNummer(zielWoche) < isoNummer(aktuelleIsoWocheJetzt()) ? 'vergangen' : 'zukünftig'
+  const wocheBadgeVariant = istAktuelleWoche ? 'success' : wocheTitel === 'vergangen' ? 'muted' : 'soft'
 
   return (
     <div ref={swipeRef} className="h-full flex flex-col min-h-0">
       {!isMobile && aktivesTeamName() && (
         <div className="card px-4 py-2.5 text-sm mb-4 flex flex-col gap-2" style={{ backgroundColor: 'var(--color-info-bg)' }}>
           <div className="flex items-center justify-between">
-            <span>
+            <span className="flex items-center min-w-0">
               <span className="text-muted">Team: </span>
               <span className="font-semibold">{aktivesTeamName()}</span>
-              <span className="text-muted ml-3">·</span>
-              <span className="font-semibold ml-3">{wocheLabel}</span>
+              <span className="ml-3 min-w-0">
+                <Badge variant="soft" bordered>{wocheLabel}</Badge>
+              </span>
             </span>
-            <span className="text-xs text-muted">{wocheTitel}</span>
+            <Badge variant={wocheBadgeVariant} bordered>{wocheTitel}</Badge>
           </div>
           {statistikAbfrage.data && wocheTitel !== 'zukünftig' && (
             <div className="flex items-center gap-2 min-w-0">
@@ -209,12 +209,8 @@ export default function Plan() {
         <div className="px-3 pt-2 pb-1 flex flex-col gap-1.5 shrink-0">
           <div className="bg-card border border-border rounded-card px-3 py-2 mb-1 flex flex-col gap-1">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-sm font-semibold text-foreground truncate">
-                {wocheLabel}
-              </span>
-              <span className="truncate" />
               <button
-                className="inline-flex items-center shrink-0 ml-auto px-2 h-6 rounded-badge text-[11px] font-bold uppercase tracking-wide"
+                className="inline-flex items-center shrink-0 px-2 h-6 rounded-badge text-[11px] font-bold uppercase tracking-wide"
                 style={{
                   backgroundColor: istAktuelleWoche ? 'var(--color-accent)' : 'var(--color-accent-soft)',
                   color: istAktuelleWoche ? '#fff' : 'var(--color-accent)',
@@ -225,18 +221,8 @@ export default function Plan() {
               >
                 {wocheTitel}
               </button>
-              {planAbfrage.data && (
-                <span
-                  className="inline-flex items-center justify-center px-2 h-6 rounded-badge text-[11px] font-bold tabular-nums shrink-0"
-                  style={{
-                    backgroundColor: istSollUnterschritten ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
-                    color: istSollUnterschritten ? 'var(--color-danger)' : 'var(--color-success)',
-                  }}
-                  title={`Ist ${istSumme}, Soll ${sollSumme} im Bereich ${bereichName}`}
-                >
-                  {istSumme}/{sollSumme}
-                </span>
-              )}
+              <Badge variant="soft" bordered>{wocheLabel}</Badge>
+              <span className="truncate" />
             </div>
             {statistikAbfrage.data && wocheTitel !== 'zukünftig' && (
               <StatistikChips
@@ -253,7 +239,7 @@ export default function Plan() {
 
       <div className="flex-1 min-h-0 flex flex-col" style={isMobile ? { touchAction: 'pan-y' } : undefined}>
         <CardContainer
-          className={isMobile ? 'flex-1 min-h-0 max-md:bg-transparent max-md:border-0 max-md:shadow-none' : 'min-h-0'}
+          className={isMobile ? 'flex-1 min-h-0 max-md:bg-transparent max-md:border-0 max-md:shadow-none' : 'flex-1 min-h-0'}
           title={isMobile ? null : `Wochenplan ${bereichName ? `— ${bereichName}` : ''}`}
           headerRight={isMobile ? null : (
             <div className="flex items-center gap-2">

@@ -19,9 +19,9 @@ export default function PlanRaster({
   aktionen: RasterAktionen
 }) {
   return (
-    <div className="px-4 md:px-6 pt-4 pb-6">
-      <div className="rounded-card border border-border overflow-x-auto">
-        <table className="w-full table-fixed">
+    <div className="px-4 md:px-6 pt-4 pb-6 h-full flex flex-col min-h-0">
+      <div className="rounded-card border border-border overflow-x-auto flex-1 min-h-0">
+        <table className="w-full table-fixed h-full">
           <thead className="bg-elevated table-header">
             <tr>
               <th className="w-[64px] md:w-[88px] text-left text-[12px] font-semibold uppercase tracking-wide text-muted border-b border-border px-2 md:px-3 py-2 h-[40px] select-none">
@@ -172,7 +172,7 @@ function ZeitfensterSlot({
 function SlotChip({ person, name }: { person: MitgliedPlanInfo | null; name: string }) {
   return (
     <div
-      className="flex items-center gap-2 w-full flex-1 min-h-[40px] px-2.5 py-1.5 rounded-badge border border-border-hover bg-accent-soft text-[13px] leading-none"
+      className="flex items-center gap-2 w-full min-h-[40px] px-2.5 py-1.5 rounded-badge border border-border-hover bg-accent-soft text-[13px] leading-none"
     >
       <Avatar
         mitgliedId={person?.id ?? null}
@@ -189,11 +189,14 @@ function SlotChip({ person, name }: { person: MitgliedPlanInfo | null; name: str
 
 function OffenChip() {
   return (
-    <div
-      className="flex items-center justify-center w-full flex-1 min-h-[40px] rounded-badge border border-dashed text-[13px] text-accent hover:bg-card-hover"
-      style={{ borderColor: 'var(--color-accent-ring)', backgroundColor: 'var(--color-accent-soft)' }}
-    >
-      offen
+    <div className="flex items-center justify-center w-full min-h-[40px] px-2.5 py-1.5 rounded-badge border border-border-hover bg-accent-soft">
+      <span
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full text-[16px] font-bold shrink-0 text-danger"
+        style={{ boxShadow: '0 0 0 1.5px var(--color-danger)' }}
+        title="offen"
+      >
+        ?
+      </span>
     </div>
   )
 }

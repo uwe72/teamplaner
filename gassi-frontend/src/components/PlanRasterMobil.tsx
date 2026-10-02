@@ -183,17 +183,16 @@ function MobilSlotChip({ person, name }: { person: MitgliedPlanInfo | null; name
   )
 }
 
-function MobilOffenChip({ dot }: { dot: boolean }) {
-  if (dot) {
-    return (
-      <div className="flex-1 min-h-[32px] rounded-badge flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent-soft)' }}>
-        <span className="h-1 w-1 rounded-full" style={{ backgroundColor: 'var(--color-accent-ring)' }} aria-hidden="true" />
-      </div>
-    )
-  }
+function MobilOffenChip({ dot: _dot }: { dot: boolean }) {
   return (
-    <div className="flex-1 min-h-[32px] rounded-badge border border-dashed flex items-center justify-center" style={{ borderColor: 'var(--color-accent-ring)', backgroundColor: 'var(--color-accent-soft)' }}>
-      <span className="text-[10px] text-accent leading-none px-1">offen</span>
+    <div className="flex-1 min-h-[32px] rounded-badge border border-border-hover bg-accent-soft flex items-center justify-center">
+      <span
+        className="inline-flex items-center justify-center h-4/5 aspect-square w-auto rounded-full text-[14px] font-bold shrink-0 text-danger"
+        style={{ boxShadow: '0 0 0 1.5px var(--color-danger)' }}
+        title="offen"
+      >
+        ?
+      </span>
     </div>
   )
 }
