@@ -12,6 +12,10 @@ public class TeamZugriffsPruefer {
 
     private final AktuellerNutzerService aktuellerNutzerService;
 
+    public Teammitglied aktuellesMitglied() {
+        return aktuellerNutzerService.aktuellesMitglied();
+    }
+
     public Teammitglied pruefeZugriff(Long teamId) {
         Teammitglied nutzer = aktuellerNutzerService.aktuellesMitglied();
         if (nutzer.getRolle() == Rolle.SUPER_ADMIN) {

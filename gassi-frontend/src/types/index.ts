@@ -13,11 +13,11 @@ export interface Teammitglied {
   login: string
   email: string
   anzeigename: string
-  farbe: string
   rolle: Rolle
   aktiv: boolean
   teamId: number | null
   teamName: string | null
+  avatarUrl: string | null
 }
 
 export interface Bereich {
@@ -48,17 +48,16 @@ export interface Zuteilung {
   aufgabeId: number
   mitgliedId: number | null
   anzeigename: string | null
-  farbe: string | null
   datum: string
 }
 
 export interface MitgliedPlanInfo {
   id: number
   anzeigename: string
-  farbe: string
   soll: number
   ist: number
   sollUnterschritten: boolean
+  avatarUrl: string | null
 }
 
 export interface PlanDto {
@@ -87,7 +86,6 @@ export interface PlanZeile {
 export interface SollEintrag {
   mitgliedId: number
   anzeigename: string
-  farbe: string
   aktiv: boolean
   wert: number
 }
@@ -103,7 +101,6 @@ export interface SollListe {
 export interface StatistikZeile {
   mitgliedId: number
   anzeigename: string
-  farbe: string
   aktiv: boolean
   ist: number
   moeglich: number
@@ -114,6 +111,7 @@ export interface Statistik {
   bereichId: number
   bereichName: string
   wochenweise: StatistikZeile[]
+  monatlich: StatistikZeile[]
   kumuliert: StatistikZeile[]
 }
 
@@ -123,11 +121,11 @@ export interface AuthAntwort {
   id: number
   login: string
   anzeigename: string
-  farbe: string
   rolle: Rolle
   teamId: number | null
   teamName: string | null
   teamOeffen: boolean
+  avatarUrl?: string | null
 }
 
 export interface Profil {
@@ -135,10 +133,10 @@ export interface Profil {
   login: string
   email: string
   anzeigename: string
-  farbe: string
   rolle: Rolle
   teamId: number | null
   teamName: string | null
+  avatarUrl: string | null
 }
 
 export interface SystemKonfiguration {

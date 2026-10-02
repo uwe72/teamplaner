@@ -47,7 +47,7 @@ public class PlanUndStatistikTest extends AbstractIntegrationTest {
         MvcResult angelegt = mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\",\"farbe\":\"#ff0000\"}"
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\"}"
                     .formatted(mitgliedLogin, mitgliedLogin)))
             .andExpect(status().isCreated())
             .andReturn();
@@ -199,6 +199,50 @@ public class PlanUndStatistikTest extends AbstractIntegrationTest {
         assertThat(annaKumuliert).isNotNull();
         assertThat(annaKumuliert.get("ist").asLong()).isEqualTo(1);
         assertThat(annaKumuliert.get("moeglich").asLong()).isEqualTo(7);
+    }
+
+    @Test
+    void statistikMonatlichZaehltNurAktuellenMonat() throws Exception {
+        aufbau();
+        LocalDate heute = LocalDate.now(ZoneId.of("Europe/Berlin"));
+
+        Long zfw = zeitfensterAnlegen("Morgens");
+        Long taeglich = aufgabeAnlegen(zfw, "Gassi Blue");
+        mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, heute, mitgliedId)))
+            .andExpect(status().isCreated());
+
+        LocalDate ersterMonatstag = heute.withDayOfMonth(1);
+        if (ersterMonatstag.isBefore(heute)) {
+            mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
+                    .header("Authorization", "Bearer " + adminToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, ersterMonatstag, mitgliedId)))
+                .andExpect(status().isCreated());
+        }
+
+        MvcResult statistik = mvc.perform(get("/api/teams/%d/statistik".formatted(teamId))
+                .param("bereichId", String.valueOf(bereichId))
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andReturn();
+        JsonNode statistikJson = om.readTree(statistik.getResponse().getContentAsString());
+        JsonNode annaMonat = null;
+        for (JsonNode zeile : statistikJson.get("monatlich")) {
+            if (zeile.get("mitgliedId").asLong() == mitgliedId) {
+                annaMonat = zeile;
+            }
+        }
+        assertThat(annaMonat).isNotNull();
+        long erwarteteZuteilungen = ersterMonatstag.isBefore(heute) ? 2 : 1;
+        if (ersterMonatstag.isEqual(heute)) {
+            erwarteteZuteilungen = 1;
+        }
+        assertThat(annaMonat.get("ist").asLong()).isEqualTo(erwarteteZuteilungen);
+        long aufkommenProTag = Math.round(7 / 7.0);
+        assertThat(annaMonat.get("moeglich").asLong()).isEqualTo(heute.getDayOfMonth() * aufkommenProTag);
     }
 
     @Test

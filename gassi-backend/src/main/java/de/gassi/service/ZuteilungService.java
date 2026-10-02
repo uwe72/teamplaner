@@ -151,6 +151,6 @@ public class ZuteilungService {
     private ZuteilungDto zuDto(Zuteilung zuteilung) {
         return new ZuteilungDto(zuteilung.getId(), zuteilung.getAufgabe().getId(),
             zuteilung.getMitglied().getId(), zuteilung.getMitglied().getAnzeigename(),
-            zuteilung.getMitglied().getFarbe(), zuteilung.getDatum());
+            zuteilung.getDatum());
     }
 }

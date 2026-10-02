@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,6 +36,14 @@ public class GlobalExceptionHandler {
             default -> HttpStatus.BAD_REQUEST;
         };
         return ResponseEntity.status(status).body(Map.of("code", e.getCode(), "message", e.getMessage()));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<Map<String, String>> handleMissingPart(MissingServletRequestPartException e) {
+        boolean bild = e.getRequestPartName() != null && e.getRequestPartName().equals("file");
+        String code = bild ? "BILD_FEHLT" : "ANFRAGE_UNVOLLSTAENDIG";
+        String message = bild ? "Es wurde kein Bild übergeben." : "Die Anfrage ist unvollständig.";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("code", code, "message", message));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

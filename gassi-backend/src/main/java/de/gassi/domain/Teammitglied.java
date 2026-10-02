@@ -48,9 +48,6 @@ public class Teammitglied {
     @Column(name = "anzeigename", nullable = false)
     private String anzeigename;
 
-    @Column(name = "farbe", nullable = false)
-    private String farbe;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "rolle", nullable = false, length = 12)
     private Rolle rolle;
@@ -58,4 +55,10 @@ public class Teammitglied {
     @Column(name = "aktiv", nullable = false)
     @Builder.Default
     private boolean aktiv = true;
+
+    @Column(name = "avatar", columnDefinition = "bytea")
+    private byte[] avatar;
+
+    @Column(name = "avatar_content_type", length = 50)
+    private String avatarContentType;
 }

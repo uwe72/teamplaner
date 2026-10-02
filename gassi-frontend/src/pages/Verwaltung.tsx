@@ -4,19 +4,17 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../api/client'
 import { aktivesTeamId } from '../api/client'
 import type { Teammitglied, Rolle } from '../types'
+import { useAvatarFuerMitglied } from '../hooks/useAvatar'
+import Avatar from '../components/Avatar'
 import Button from '../components/Button'
 import Badge from '../components/Badge'
+import FormCard from '../components/FormCard'
 import CardContainer from '../components/CardContainer'
 import { TableContent, TableHead, TableBody, Th } from '../components/Table'
 import { Dialog } from '../components/Dialog'
 import Tabs from '../components/Tabs'
 import { antwort } from '../utils/fehler'
 import { BereichePanel } from './Bereiche'
-
-const FARBPALETTE = [
-  '#b91c1c', '#c2410c', '#b7791f', '#4d7c0f', '#15803d', '#0f766e',
-  '#0369a1', '#4338ca', '#7e22ce', '#a21caf', '#be123c', '#78716c',
-]
 
 const rolleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Plattform-Admin',
@@ -55,7 +53,6 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
     email: string
     passwort: string
     anzeigename: string
-    farbe: string
     rolle: Rolle
   }) {
     setFehler(null)
@@ -71,7 +68,6 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
 
   async function mitgliedSpeichern(id: number, anfrage: {
     anzeigename: string
-    farbe: string
     email: string
     rolle: string
     aktiv: boolean
@@ -119,7 +115,7 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
         <CardContainer
           className="min-h-0"
           title="Teammitglieder"
-          subtitle="Logins, Rollen und Farben — deaktivierte Mitglieder bleiben in der Historie sichtbar."
+          subtitle="Logins, Rollen und Profile — deaktivierte Mitglieder bleiben in der Historie sichtbar."
           headerRight={
             <Button size="input" onClick={() => { setNeuOffen(o => !o); setBearbeiteId(null) }}>
               Mitglied anlegen
@@ -149,7 +145,7 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
                   <tr key={m.id} className={`hover:bg-card-hover border-b border-border ${index % 2 === 1 ? 'bg-zebra' : ''}`}>
                     <td className="px-2 py-2 md:px-3">
                       <span className="flex items-center gap-2 font-medium">
-                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: m.farbe }} />
+                        <Avatar mitgliedId={m.id} anzeigename={m.anzeigename} avatarUrl={m.avatarUrl} groesse="sm" />
                         {m.anzeigename}
                       </span>
                     </td>
@@ -212,23 +208,6 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
   )
 }
 
-function Farbpalette({ wert, onWaehlen }: { wert: string; onWaehlen: (farbe: string) => void }) {
-  return (
-    <div className="flex gap-1.5 flex-wrap">
-      {FARBPALETTE.map(f => (
-        <button
-          key={f}
-          type="button"
-          onClick={() => onWaehlen(f)}
-          className={`w-7 h-7 rounded-full border-2 transition-transform ${wert === f ? 'ring-2 ring-offset-2 ring-accent-ring' : ''}`}
-          style={{ backgroundColor: f, borderColor: 'var(--color-border)' }}
-          aria-label={`Farbe ${f}`}
-        />
-      ))}
-    </div>
-  )
-}
-
 function MitgliedBearbeiten({
   mitglied,
   onSpeichern,
@@ -236,19 +215,47 @@ function MitgliedBearbeiten({
   fehler,
 }: {
   mitglied: Teammitglied
-  onSpeichern: (anfrage: { anzeigename: string; farbe: string; email: string; rolle: string; aktiv: boolean }, passwort: string) => Promise<void>
+  onSpeichern: (anfrage: { anzeigename: string; email: string; rolle: string; aktiv: boolean }, passwort: string) => Promise<void>
   onAbbrechen: () => void
   fehler: string | null
 }) {
   const [entwurf, setEntwurf] = useState({
     anzeigename: mitglied.anzeigename,
-    farbe: mitglied.farbe,
     email: mitglied.email,
     rolle: mitglied.rolle,
     aktiv: mitglied.aktiv,
   })
   const [passwort, setPasswort] = useState('')
   const [laedt, setLaedt] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(mitglied.avatarUrl)
+  const [bildMeldung, setBildMeldung] = useState<string | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const { hochladen, loeschen } = useAvatarFuerMitglied()
+
+  async function bildWaehlen(e: React.ChangeEvent<HTMLInputElement>) {
+    const datei = e.target.files?.[0]
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
+    if (!datei) return
+    setBildMeldung(null)
+    try {
+      await hochladen.mutateAsync({ mitgliedId: mitglied.id, file: datei })
+      setAvatarUrl(`/api/teams/${mitglied.teamId}/mitglieder/${mitglied.id}/avatar`)
+      setBildMeldung('Profilbild gespeichert.')
+    } catch (err) {
+      setBildMeldung(antwort(err))
+    }
+  }
+
+  async function bildEntfernen() {
+    setBildMeldung(null)
+    try {
+      await loeschen.mutateAsync(mitglied.id)
+      setAvatarUrl(null)
+      setBildMeldung('Profilbild entfernt.')
+    } catch (err) {
+      setBildMeldung(antwort(err))
+    }
+  }
 
   return (
     <div>
@@ -258,6 +265,41 @@ function MitgliedBearbeiten({
           <p className="text-danger text-sm font-medium">{fehler}</p>
         </div>
       )}
+      <FormCard className="mb-6">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Profilbild</h3>
+        <div className="flex items-center gap-4">
+          <Avatar
+            mitgliedId={mitglied.id}
+            anzeigename={mitglied.anzeigename}
+            avatarUrl={avatarUrl}
+            groesse="lg"
+          />
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-3">
+              <Button variant="secondary" size="compact" disabled={hochladen.isPending || loeschen.isPending} onClick={() => avatarInputRef.current?.click()}>
+                {avatarUrl ? 'Bild ändern' : 'Bild hochladen'}
+              </Button>
+              {avatarUrl && (
+                <Button variant="ghost" size="compact" disabled={hochladen.isPending || loeschen.isPending} onClick={bildEntfernen}>
+                  Bild entfernen
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-subtle">JPG, PNG oder WebP — maximal 2 MB.</p>
+            {(hochladen.isPending || loeschen.isPending) && (
+              <p className="text-xs text-muted">Bitte warten...</p>
+            )}
+            {bildMeldung && <p className="text-xs text-muted">{bildMeldung}</p>}
+          </div>
+        </div>
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={bildWaehlen}
+        />
+      </FormCard>
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="block text-sm text-muted mb-1">Anzeigename <span className="text-muted">*</span></label>
@@ -287,10 +329,6 @@ function MitgliedBearbeiten({
             onChange={e => setEntwurf(v => ({ ...v, email: e.target.value }))}
             className="input-field w-full px-3 py-2 rounded-badge focus:outline-none"
           />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm text-muted mb-2">Farbe</label>
-          <Farbpalette wert={entwurf.farbe} onWaehlen={farbe => setEntwurf(v => ({ ...v, farbe }))} />
         </div>
         <div>
           <label className="block text-sm text-muted mb-1">Neues Passwort (optional)</label>
@@ -331,7 +369,7 @@ function MitgliedAnlegen({
   onAbbrechen,
   fehler,
 }: {
-  onAnlegen: (a: { login: string; email: string; passwort: string; anzeigename: string; farbe: string; rolle: Rolle }) => Promise<void>
+  onAnlegen: (a: { login: string; email: string; passwort: string; anzeigename: string; rolle: Rolle }) => Promise<void>
   onAbbrechen: () => void
   fehler: string | null
 }) {
@@ -340,7 +378,6 @@ function MitgliedAnlegen({
   const [email, setEmail] = useState('')
   const [passwort, setPasswort] = useState('')
   const [anzeigename, setAnzeigename] = useState('')
-  const [farbe, setFarbe] = useState(FARBPALETTE[0])
   const [rolle, setRolle] = useState<Rolle>('MITGLIED')
   const [laedt, setLaedt] = useState(false)
 
@@ -408,16 +445,12 @@ function MitgliedAnlegen({
             <option value="ADMIN">Team-Admin</option>
           </select>
         </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm text-muted mb-2">Farbe</label>
-          <Farbpalette wert={farbe} onWaehlen={setFarbe} />
-        </div>
       </div>
       <div className="mt-6 flex gap-4">
         <Button variant="emphasized" disabled={!login.trim() || !email.trim() || !passwort || !anzeigename.trim() || laedt}
           onClick={async () => {
             setLaedt(true)
-            await onAnlegen({ login: login.trim(), email: email.trim(), passwort, anzeigename: anzeigename.trim(), farbe, rolle })
+            await onAnlegen({ login: login.trim(), email: email.trim(), passwort, anzeigename: anzeigename.trim(), rolle })
             setLaedt(false)
           }}>
           Anlegen

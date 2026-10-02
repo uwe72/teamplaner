@@ -41,14 +41,47 @@ export async function profilLaden(): Promise<Profil> {
   return antwort.data
 }
 
-export async function profilAendern(anzeigename: string, farbe: string): Promise<Profil> {
-  const antwort = await api.put<Profil>('/auth/profil', { anzeigename, farbe })
+export async function profilAendern(anzeigename: string): Promise<Profil> {
+  const antwort = await api.put<Profil>('/auth/profil', { anzeigename })
   return antwort.data
 }
 
 export async function passwortAendern(altesPasswort: string, neuesPasswort: string): Promise<Profil> {
   const antwort = await api.put<Profil>('/auth/passwort', { altesPasswort, neuesPasswort })
   return antwort.data
+}
+
+export async function eigenesAvatarHochladen(file: File): Promise<Profil> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const antwort = await api.put<Profil>('/auth/me/avatar', formData)
+  return antwort.data
+}
+
+export async function eigenesAvatarLoeschen(): Promise<void> {
+  await api.delete('/auth/me/avatar')
+}
+
+export async function avatarHochladenFuer(teamId: number, mitgliedId: number, file: File): Promise<void> {
+  const formData = new FormData()
+  formData.append('file', file)
+  await api.put(`/teams/${teamId}/mitglieder/${mitgliedId}/avatar`, formData)
+}
+
+export async function avatarLoeschenFuer(teamId: number, mitgliedId: number): Promise<void> {
+  await api.delete(`/teams/${teamId}/mitglieder/${mitgliedId}/avatar`)
+}
+
+export async function avatarLaden(teamId: number, mitgliedId: number): Promise<Blob> {
+  const antwort = await api.get(`/teams/${teamId}/mitglieder/${mitgliedId}/avatar`, {
+    responseType: 'blob',
+  })
+  return antwort.data as Blob
+}
+
+export async function eigenesAvatarLaden(): Promise<Blob> {
+  const antwort = await api.get('/auth/me/avatar', { responseType: 'blob' })
+  return antwort.data as Blob
 }
 
 export async function teamsLaden(): Promise<Team[]> {

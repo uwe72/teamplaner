@@ -8,8 +8,7 @@ import de.gassi.domain.Teammitglied;
 import de.gassi.domain.Zeitfenster;
 import de.gassi.dto.AufgabeAendernAnfrage;
 import de.gassi.dto.AufgabeAnlegenAnfrage;
-import de.gassi.dto.AufgabeDto;
-import de.gassi.dto.BereichAendernAnfrage;
+import de.gassi.dto.AufgabeDto;import de.gassi.dto.BereichAendernAnfrage;
 import de.gassi.dto.BereichAnlegenAnfrage;
 import de.gassi.dto.BereichDto;
 import de.gassi.dto.MitgliedAendernAnfrage;
@@ -221,7 +220,7 @@ public class StammdatenService {
                     .findFirst()
                     .map(Soll::getWert)
                     .orElse(0);
-                return new SollListeDto.SollEintrag(m.getId(), m.getAnzeigename(), m.getFarbe(), m.isAktiv(), wert);
+                return new SollListeDto.SollEintrag(m.getId(), m.getAnzeigename(), m.isAktiv(), wert);
             })
             .toList();
         return new SollListeDto(bereichId, aufkommen, sollSumme, sollSumme != aufkommen, eintraege);
@@ -247,10 +246,12 @@ public class StammdatenService {
         zugriffsPruefer.pruefeZugriff(teamId);
         return teammitgliedRepository.findByTeamIdOrderByIdAsc(teamId).stream()
             .filter(m -> alle || m.isAktiv())
-            .map(m -> new MitgliedDto(m.getId(), m.getLogin(), m.getEmail(), m.getAnzeigename(), m.getFarbe(),
+            .map(m -> new MitgliedDto(m.getId(), m.getLogin(), m.getEmail(), m.getAnzeigename(),
                 m.getRolle().name(), m.isAktiv(),
                 m.getTeam() == null ? null : m.getTeam().getId(),
-                m.getTeam() == null ? null : m.getTeam().getName()))
+                m.getTeam() == null ? null : m.getTeam().getName(),
+                AvatarService.avatarUrlFuer(m.getTeam() == null ? null : m.getTeam().getId(), m.getId(),
+                    m.getAvatar() != null && m.getAvatar().length > 0)))
             .toList();
     }
 
@@ -278,7 +279,6 @@ public class StammdatenService {
             .email(anfrage.email().trim())
             .passwortHash(passwordEncoder.encode(anfrage.passwort()))
             .anzeigename(anfrage.anzeigename().trim())
-            .farbe(anfrage.farbe())
             .rolle(rolle)
             .aktiv(true)
             .build();
@@ -310,7 +310,6 @@ public class StammdatenService {
         }
 
         mitglied.setAnzeigename(anfrage.anzeigename().trim());
-        mitglied.setFarbe(anfrage.farbe());
         mitglied.setEmail(anfrage.email().trim());
         if (anfrage.rolle() != null && !anfrage.rolle().isBlank()) {
             Rolle rolle = Rolle.valueOf(anfrage.rolle());
@@ -378,9 +377,15 @@ public class StammdatenService {
     }
 
     private MitgliedDto zuMitgliedDto(Teammitglied m) {
-        return new MitgliedDto(m.getId(), m.getLogin(), m.getEmail(), m.getAnzeigename(), m.getFarbe(),
+        return new MitgliedDto(m.getId(), m.getLogin(), m.getEmail(), m.getAnzeigename(),
             m.getRolle().name(), m.isAktiv(),
             m.getTeam() == null ? null : m.getTeam().getId(),
-            m.getTeam() == null ? null : m.getTeam().getName());
+            m.getTeam() == null ? null : m.getTeam().getName(),
+            AvatarService.avatarUrlFuer(m.getTeam() == null ? null : m.getTeam().getId(), m.getId(),
+                m.getAvatar() != null && m.getAvatar().length > 0));
+    }
+
+    public MitgliedDto mitgliedDtoFuer(Teammitglied m) {
+        return zuMitgliedDto(m);
     }
 }

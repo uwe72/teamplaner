@@ -67,7 +67,7 @@ public class ZuteilungRechteTest extends AbstractIntegrationTest {
         MvcResult angelegt = mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\",\"farbe\":\"#ff0000\"}"
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\"}"
                     .formatted(mitgliedLogin, mitgliedLogin)))
             .andExpect(status().isCreated())
             .andReturn();

@@ -1,14 +1,14 @@
 import { useDroppable } from '@dnd-kit/core'
-import type { PlanDto, Zuteilung } from '../types'
+import type { MitgliedPlanInfo, PlanDto, ZeitfensterGruppe } from '../types'
 import tagLabel from '../utils/datum'
 import type { ReactNode } from 'react'
+import Avatar from './Avatar'
 
 export interface RasterAktionen {
   eigeneId: number
   istAdmin: boolean
   heute: string
-  onBoxKlick: (aufgabeId: number, datum: string, belegterName: string | null) => void
-  onZeitfensterKlick: (zeitfensterId: number, datum: string) => void
+  onSlotKlick: (zeitfensterId: number, datum: string) => void
 }
 
 export default function PlanRaster({
@@ -24,7 +24,7 @@ export default function PlanRaster({
         <table className="w-full table-fixed">
           <thead className="bg-elevated table-header">
             <tr>
-              <th className="w-[92px] md:w-[120px] text-left text-[12px] font-semibold uppercase tracking-wide text-muted border-b border-border px-2 md:px-3 py-2 h-[40px] select-none">
+              <th className="w-[64px] md:w-[88px] text-left text-[12px] font-semibold uppercase tracking-wide text-muted border-b border-border px-2 md:px-3 py-2 h-[40px] select-none">
                 Aufgabe
               </th>
               {plan.tage.map(d => {
@@ -67,20 +67,45 @@ function ZeitfensterGruppeZeilen({
   plan: PlanDto
   aktionen: RasterAktionen
 }) {
+  const mehrfach = gruppe.zeilen.length > 1
+  if (mehrfach) {
+    return (
+      <tr className="hover:bg-card-hover border-b border-border last:border-b-0 align-top">
+        <td className="px-2 md:px-3 py-2 text-muted font-medium leading-tight" title={gruppe.zeitfensterName}>
+          <span className="block truncate">{gruppe.zeitfensterName}</span>
+        </td>
+        {plan.tage.map(datum => (
+          <ZeitfensterSlot
+            key={datum}
+            gruppe={gruppe}
+            datum={datum}
+            mitglieder={plan.mitglieder}
+            {...aktionen}
+          />
+        ))}
+      </tr>
+    )
+  }
   return (
     <>
       <tr className="bg-elevated">
-        <ZeitfensterKopf gruppe={gruppe} plan={plan} aktionen={aktionen} />
+        <td className="px-2 md:px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted border-b border-border select-none" title={gruppe.zeitfensterName}>
+          <span className="block truncate">{gruppe.zeitfensterName}</span>
+        </td>
+        {plan.tage.map(datum => (
+          <td key={datum} className="border-b border-border" />
+        ))}
       </tr>
       {gruppe.zeilen.map(zeile => (
         <tr key={zeile.aufgabe.id} className="hover:bg-card-hover border-b border-border last:border-b-0 align-top">
-          <td className="px-2 md:px-3 py-2 text-muted font-medium leading-tight">
-            {zeile.aufgabe.name}
+          <td className="px-2 md:px-3 py-2 text-muted font-medium leading-tight" title={zeile.aufgabe.name}>
+            <span className="block truncate">{zeile.aufgabe.name}</span>
           </td>
           {plan.tage.map(datum => (
             <ZellenBox
               key={datum}
               aufgabeId={zeile.aufgabe.id}
+              zeitfensterId={gruppe.zeitfensterId}
               zuteilung={zeile.zuteilungen.find(z => z.datum === datum) ?? null}
               datum={datum}
               mitglieder={plan.mitglieder}
@@ -93,71 +118,98 @@ function ZeitfensterGruppeZeilen({
   )
 }
 
-function ZeitfensterKopf({
+function ZeitfensterSlot({
   gruppe,
-  plan,
-  aktionen,
-}: {
-  gruppe: PlanDto['gruppen'][number]
-  plan: PlanDto
-  aktionen: RasterAktionen
-}) {
-  return (
-    <>
-      <td className="px-2 md:px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted border-b border-border select-none">
-        {gruppe.zeitfensterName}
-      </td>
-      {plan.tage.map(datum => (
-        <ZeitfensterDropzelle
-          key={datum}
-          zeitfensterId={gruppe.zeitfensterId}
-          datum={datum}
-          anzahl={gruppe.zeilen.length}
-          {...aktionen}
-        />
-      ))}
-    </>
-  )
-}
-
-function ZeitfensterDropzelle({
-  zeitfensterId,
   datum,
-  anzahl,
-  onZeitfensterKlick,
+  mitglieder,
+  onSlotKlick,
 }: {
-  zeitfensterId: number
+  gruppe: ZeitfensterGruppe
   datum: string
-  anzahl: number
-} & Omit<RasterAktionen, 'onBoxKlick'>) {
-  const { setNodeRef, isOver } = useDroppable({ id: `zf-${zeitfensterId}-${datum}` })
+  mitglieder: PlanDto['mitglieder']
+} & Pick<RasterAktionen, 'onSlotKlick'>) {
+  const { setNodeRef, isOver } = useDroppable({ id: `slot-${gruppe.zeitfensterId}-${datum}` })
+  const chips: { key: string; person: MitgliedPlanInfo | null; name: string }[] = []
+  let offen = false
+  for (const zeile of gruppe.zeilen) {
+    const zuteilung = zeile.zuteilungen.find(z => z.datum === datum) ?? null
+    if (zuteilung?.mitgliedId) {
+      if (chips.some(c => c.key === `m-${zuteilung.mitgliedId}`)) continue
+      const person = mitglieder.find(m => m.id === zuteilung.mitgliedId) ?? null
+      chips.push({
+        key: `m-${zuteilung.mitgliedId}`,
+        person,
+        name: person?.anzeigename ?? zuteilung.anzeigename ?? '',
+      })
+    } else {
+      offen = true
+    }
+  }
+
+  const inhalt: ReactNode = chips.length > 0 || offen ? (
+    <div className="flex flex-col gap-1 h-full">
+      {chips.map(c => (
+        <SlotChip key={c.key} person={c.person} name={c.name} />
+      ))}
+      {offen && <OffenChip />}
+    </div>
+  ) : null
+
   return (
-    <td
-      ref={setNodeRef}
-      onClick={() => onZeitfensterKlick(zeitfensterId, datum)}
-      title={anzahl > 1 ? `Alle ${anzahl} Aufgaben dieses Zeitfensters zuweisen` : undefined}
-      className="cursor-pointer px-1 md:px-1.5 border-b border-border hover:bg-card-hover align-middle"
-      style={{ touchAction: 'none' }}
-    >
+    <td className="p-1 align-top h-full">
       <div
-        className={`text-[10px] leading-none text-muted text-center py-1 px-1.5 rounded-badge border border-dashed border-border-strong select-none ${isOver ? 'outline-2 outline-dashed rounded-badge outline-accent' : ''}`}
+        ref={setNodeRef}
+        className={`cursor-pointer h-full ${isOver ? 'outline-2 outline-dashed rounded-badge outline-accent' : ''}`}
+        onClick={() => onSlotKlick(gruppe.zeitfensterId, datum)}
+        style={{ touchAction: 'none' }}
       >
-        alle
+        {inhalt}
       </div>
     </td>
   )
 }
 
+function SlotChip({ person, name }: { person: MitgliedPlanInfo | null; name: string }) {
+  return (
+    <div
+      className="flex items-center gap-2 w-full flex-1 min-h-[40px] px-2.5 py-1.5 rounded-badge border border-border-hover bg-accent-soft text-[13px] leading-none"
+    >
+      <Avatar
+        mitgliedId={person?.id ?? null}
+        anzeigename={name}
+        avatarUrl={person?.avatarUrl ?? null}
+        groesse="xl"
+      />
+      <span className="font-medium truncate text-foreground" title={name}>
+        {name}
+      </span>
+    </div>
+  )
+}
+
+function OffenChip() {
+  return (
+    <div
+      className="flex items-center justify-center w-full flex-1 min-h-[40px] rounded-badge border border-dashed text-[13px] text-accent hover:bg-card-hover"
+      style={{ borderColor: 'var(--color-accent-ring)', backgroundColor: 'var(--color-accent-soft)' }}
+    >
+      offen
+    </div>
+  )
+}
+
 function ZellenBox({
   aufgabeId,
+  zeitfensterId,
   datum,
   zuteilung,
   mitglieder,
-  onBoxKlick,
+  onSlotKlick,
 }: {
   aufgabeId: number
+  zeitfensterId: number
   datum: string
-  zuteilung: Zuteilung | null
+  zuteilung: PlanDto['gruppen'][number]['zeilen'][number]['zuteilungen'][number] | null
   mitglieder: PlanDto['mitglieder']
 } & Omit<RasterAktionen, 'istAdmin' | 'heute'>) {
   const { setNodeRef, isOver } = useDroppable({ id: `box-${aufgabeId}-${datum}` })
@@ -166,27 +218,17 @@ function ZellenBox({
     : null
 
   const inhalt: ReactNode = person ? (
-    <div
-      className="flex items-center gap-1.5 px-1.5 py-1 rounded-badge border text-[12px] md:text-[13px] leading-none min-h-[26px]"
-      style={{ backgroundColor: `${person.farbe}1f`, borderColor: person.farbe }}
-    >
-      <span className="font-medium truncate" style={{ color: person.farbe }}>
-        {person.anzeigename}
-      </span>
-    </div>
+    <SlotChip person={person} name={person.anzeigename} />
   ) : (
-    <div className="flex items-center px-1.5 py-1 rounded-badge border border-dashed text-[12px] md:text-[13px] text-accent hover:bg-card-hover min-h-[26px]"
-      style={{ borderColor: 'var(--color-accent-ring)', backgroundColor: 'var(--color-accent-soft)' }}>
-      offen
-    </div>
+    <OffenChip />
   )
 
   return (
-    <td className="px-1 md:px-1.5 py-1 align-top">
+    <td className="p-1 align-top h-full">
       <div
         ref={setNodeRef}
-        className={`cursor-pointer ${isOver ? 'outline-2 outline-dashed rounded-badge outline-accent' : ''}`}
-        onClick={() => onBoxKlick(aufgabeId, datum, zuteilung?.anzeigename ?? null)}
+        className={`cursor-pointer h-full flex ${isOver ? 'outline-2 outline-dashed rounded-badge outline-accent' : ''}`}
+        onClick={() => onSlotKlick(zeitfensterId, datum)}
         style={{ touchAction: 'none' }}
       >
         {inhalt}

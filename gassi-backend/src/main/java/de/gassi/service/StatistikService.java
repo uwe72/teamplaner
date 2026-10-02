@@ -56,7 +56,7 @@ public class StatistikService {
                 .toList();
         } else {
             wochenweise = mitglieder.stream()
-                .map(m -> new StatistikDto.StatistikZeile(m.getId(), m.getAnzeigename(), m.getFarbe(),
+                .map(m -> new StatistikDto.StatistikZeile(m.getId(), m.getAnzeigename(),
                     m.isAktiv(), 0, aufkommenProWoche, 0.0))
                 .toList();
         }
@@ -72,7 +72,18 @@ public class StatistikService {
             })
             .toList();
 
-        return new StatistikDto(bereich.getId(), bereich.getName(), wochenweise, kumuliert);
+        LocalDate ersterMonatstag = heute.withDayOfMonth(1);
+        LocalDate letzterMonatstag = heute.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
+        long aufkommenProTag = Math.round(aufkommenProWoche / 7.0);
+        List<StatistikDto.StatistikZeile> monatlich = mitglieder.stream()
+            .map(m -> {
+                long ist = zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, ersterMonatstag, letzterMonatstag);
+                long moeglich = heute.getDayOfMonth() * aufkommenProTag;
+                return zeile(m, ist, moeglich);
+            })
+            .toList();
+
+        return new StatistikDto(bereich.getId(), bereich.getName(), wochenweise, monatlich, kumuliert);
     }
 
     private LocalDate montagDerWoche(LocalDate datum) {
@@ -81,7 +92,7 @@ public class StatistikService {
 
     private StatistikDto.StatistikZeile zeile(Teammitglied m, long ist, long moeglich) {
         double prozent = moeglich <= 0 ? 0.0 : Math.round((100.0 * ist / moeglich) * 10.0) / 10.0;
-        return new StatistikDto.StatistikZeile(m.getId(), m.getAnzeigename(), m.getFarbe(), m.isAktiv(),
+        return new StatistikDto.StatistikZeile(m.getId(), m.getAnzeigename(), m.isAktiv(),
             ist, moeglich, prozent);
     }
 }

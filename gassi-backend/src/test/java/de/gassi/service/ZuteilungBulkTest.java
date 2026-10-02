@@ -64,8 +64,8 @@ public class ZuteilungBulkTest extends AbstractIntegrationTest {
         aufgabe2Id = aufgabeAnlegen("Gassi Rot");
 
         String mitgliedLogin = eindeutig("anna");
-        mitgliedId = mitgliedAnlegen(mitgliedLogin, "Anna", "#ff0000");
-        anderesMitgliedId = mitgliedAnlegen(eindeutig("ben"), "Ben", "#00ff00");
+        mitgliedId = mitgliedAnlegen(mitgliedLogin, "Anna");
+        anderesMitgliedId = mitgliedAnlegen(eindeutig("ben"), "Ben");
         mitgliedToken = anmelden(mitgliedLogin, "pw").get("token").asText();
     }
 
@@ -80,12 +80,12 @@ public class ZuteilungBulkTest extends AbstractIntegrationTest {
         return om.readTree(aufgabe.getResponse().getContentAsString()).get("id").asLong();
     }
 
-    private Long mitgliedAnlegen(String login, String anzeigename, String farbe) throws Exception {
+    private Long mitgliedAnlegen(String login, String anzeigename) throws Exception {
         MvcResult angelegt = mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"%s\",\"farbe\":\"%s\"}"
-                    .formatted(login, login, anzeigename, farbe)))
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"%s\"}"
+                    .formatted(login, login, anzeigename)))
             .andExpect(status().isCreated())
             .andReturn();
         Long id = om.readTree(angelegt.getResponse().getContentAsString()).get("id").asLong();

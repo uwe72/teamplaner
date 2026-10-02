@@ -5,9 +5,9 @@ public record ProfilDto(
     String login,
     String email,
     String anzeigename,
-    String farbe,
     String rolle,
     Long teamId,
-    String teamName
+    String teamName,
+    String avatarUrl
 ) {
 }

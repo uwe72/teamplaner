@@ -7,7 +7,6 @@ public record ZuteilungDto(
     Long aufgabeId,
     Long mitgliedId,
     String anzeigename,
-    String farbe,
     LocalDate datum
 ) {
 }

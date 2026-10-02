@@ -5,6 +5,7 @@ import api from '../api/client'
 import { aktivesTeamId } from '../api/client'
 import type { Bereich, Statistik } from '../types'
 import { aktuelleIsoWocheJetzt, verschiebeIsoWoche, type IsoWoche } from '../utils/datum'
+import { statistikFarbe } from '../utils/farben'
 import CardContainer from '../components/CardContainer'
 import Button from '../components/Button'
 import { TableContent, TableHead, TableBody, Th } from '../components/Table'
@@ -42,6 +43,9 @@ export default function StatistikSeite() {
   }
 
   const daten = statistikAbfrage.data
+  const farbenMap = new Map<number, string>(
+    (daten?.wochenweise ?? []).map((z, index) => [z.mitgliedId, statistikFarbe(index)]),
+  )
   const istAktuelleWoche = fokus == null
     || (zielWoche.isoJahr === aktuelleIsoWocheJetzt().isoJahr && zielWoche.isoWoche === aktuelleIsoWocheJetzt().isoWoche)
 
@@ -86,13 +90,13 @@ export default function StatistikSeite() {
         {statistikAbfrage.isLoading || !daten ? (
           <div className="text-center py-8 text-muted">Laden...</div>
         ) : (
-          <TortenView zeilen={daten.wochenweise} titel={`Woche ${zielWoche.isoWoche}/${zielWoche.isoJahr}`} />
+          <TortenView zeilen={daten.wochenweise} farbenMap={farbenMap} titel={`Woche ${zielWoche.isoWoche}/${zielWoche.isoJahr}`} />
         )}
       </CardContainer>
 
       {daten && (
         <CardContainer title={`Kumuliert — ${daten.bereichName}`}>
-          <TortenView zeilen={daten.kumuliert} titel="Alle Wochen seit Teamstart" />
+          <TortenView zeilen={daten.kumuliert} farbenMap={farbenMap} titel="Alle Wochen seit Teamstart" />
         </CardContainer>
       )}
 
@@ -116,7 +120,7 @@ export default function StatistikSeite() {
                     <tr key={w.mitgliedId} className="hover:bg-card-hover border-b border-border">
                       <td className="px-2 py-2 md:px-3">
                         <span className="flex items-center gap-2 font-medium">
-                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: w.farbe }} />
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: farbenMap.get(w.mitgliedId) }} />
                           {w.anzeigename}
                           {!w.aktiv && <Badge variant="muted">inaktiv</Badge>}
                         </span>
@@ -143,11 +147,11 @@ function prozent(wert: number): string {
   return `${Math.round(wert * 10) / 10}%`
 }
 
-function TortenView({ zeilen, titel }: { zeilen: Statistik['wochenweise']; titel: string }) {
+function TortenView({ zeilen, farbenMap, titel }: { zeilen: Statistik['wochenweise']; farbenMap: Map<number, string>; titel: string }) {
   const daten = zeilen.filter(z => z.ist > 0).map(z => ({
     name: z.anzeigename,
     wert: z.ist,
-    farbe: z.farbe,
+    farbe: farbenMap.get(z.mitgliedId) ?? '#78716c',
   }))
 
   return (
@@ -182,7 +186,7 @@ function TortenView({ zeilen, titel }: { zeilen: Statistik['wochenweise']; titel
       <div className="space-y-2">
         {zeilen.map(z => (
           <div key={z.mitgliedId} className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: z.farbe }} />
+            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: farbenMap.get(z.mitgliedId) }} />
             <span className="text-sm flex-1 min-w-0 truncate">{z.anzeigename}</span>
             <span className="text-sm tabular-nums text-muted">{z.ist} / {z.moeglich}</span>
             <span className="text-sm tabular-nums font-semibold w-16 text-right">{prozent(z.prozent)}</span>

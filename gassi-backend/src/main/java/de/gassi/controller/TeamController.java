@@ -19,13 +19,17 @@ import de.gassi.dto.ZeitfensterDto;
 import de.gassi.dto.ZuteilungAnlegenAnfrage;
 import de.gassi.dto.ZuteilungDto;
 import de.gassi.dto.ZeitfensterZuteilungAnlegenAnfrage;
+import de.gassi.service.AvatarService;
 import de.gassi.service.PlanService;
 import de.gassi.service.StatistikService;
 import de.gassi.service.StammdatenService;
 import de.gassi.service.ZuteilungService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +40,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -48,6 +53,7 @@ public class TeamController {
     private final ZuteilungService zuteilungService;
     private final StammdatenService stammdatenService;
     private final StatistikService statistikService;
+    private final AvatarService avatarService;
 
     @GetMapping("/plan")
     public PlanDto wochenplan(@PathVariable Long teamId,
@@ -163,6 +169,29 @@ public class TeamController {
     public MitgliedDto mitgliedAendern(@PathVariable Long teamId, @PathVariable Long mitgliedId,
                                        @Valid @RequestBody MitgliedAendernAnfrage anfrage) {
         return stammdatenService.mitgliedAendern(teamId, mitgliedId, anfrage);
+    }
+
+    @GetMapping("/mitglieder/{mitgliedId}/avatar")
+    public ResponseEntity<byte[]> mitgliedAvatar(@PathVariable Long teamId, @PathVariable Long mitgliedId) {
+        return avatarService.laden(teamId, mitgliedId)
+            .map(bild -> ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(bild.contentType() == null
+                    ? MediaType.IMAGE_JPEG_VALUE : bild.contentType()))
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                .body(bild.daten()))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/mitglieder/{mitgliedId}/avatar")
+    public MitgliedDto mitgliedAvatarHochladen(@PathVariable Long teamId, @PathVariable Long mitgliedId,
+                                               @RequestParam("file") MultipartFile file) {
+        return stammdatenService.mitgliedDtoFuer(avatarService.hochladen(teamId, mitgliedId, file));
+    }
+
+    @DeleteMapping("/mitglieder/{mitgliedId}/avatar")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void mitgliedAvatarLoeschen(@PathVariable Long teamId, @PathVariable Long mitgliedId) {
+        avatarService.loeschen(teamId, mitgliedId);
     }
 
     @GetMapping("/statistik")

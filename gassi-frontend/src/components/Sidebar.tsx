@@ -112,8 +112,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               <div
-                className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ backgroundColor: person ? `${person.farbe}1f` : 'var(--color-accent-muted)', color: person?.farbe ?? 'var(--color-accent)' }}
+                className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold bg-accent-muted text-accent"
               >
                 {person?.anzeigename?.charAt(0).toUpperCase() || 'U'}
               </div>

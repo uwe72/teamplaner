@@ -13,7 +13,6 @@ public record SollListeDto(
     public record SollEintrag(
         Long mitgliedId,
         String anzeigename,
-        String farbe,
         boolean aktiv,
         int wert
     ) {

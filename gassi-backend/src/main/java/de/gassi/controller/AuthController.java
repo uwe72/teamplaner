@@ -14,10 +14,15 @@ import de.gassi.dto.ProfilAendernAnfrage;
 import de.gassi.dto.ProfilDto;
 import de.gassi.dto.TeamAnlegenAnfrage;
 import de.gassi.service.AuthService;
+import de.gassi.service.AvatarService;
 import de.gassi.service.PasswortResetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -36,6 +42,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final AvatarService avatarService;
     private final PasswortResetService passwortResetService;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -95,5 +102,28 @@ public class AuthController {
     @GetMapping("/profil")
     public ProfilDto profil() {
         return authService.profil(null);
+    }
+
+    @GetMapping("/me/avatar")
+    public ResponseEntity<byte[]> eigenesAvatar() {
+        return avatarService.eigenesLaden()
+            .map(bild -> ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(bild.contentType() == null
+                    ? MediaType.IMAGE_JPEG_VALUE : bild.contentType()))
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                .body(bild.daten()))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/me/avatar")
+    public ProfilDto eigenesAvatarHochladen(@RequestParam("file") MultipartFile file) {
+        avatarService.eigenesHochladen(file);
+        return authService.profil(null);
+    }
+
+    @DeleteMapping("/me/avatar")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eigenesAvatarLoeschen() {
+        avatarService.eigenesLoeschen();
     }
 }

@@ -5,17 +5,17 @@ import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, type DragE
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { aktivesTeamId, aktivesTeamName, sitzungLaden } from '../api/client'
 import api from '../api/client'
-import type { FehlerAntwort, PlanDto } from '../types'
+import type { FehlerAntwort, PlanDto, Statistik } from '../types'
 import { aktuelleIsoWocheJetzt, heutigesDatum, isoNummer, verschiebeIsoWoche, wochenbereich, type IsoWoche } from '../utils/datum'
 import { holeEigeneId } from '../utils/eigeneId'
 import useIsMobile from '../hooks/useIsMobile'
 import useBereiche from '../hooks/useBereiche'
-import PersonenLeiste from '../components/PersonenLeiste'
 import PlanRaster from '../components/PlanRaster'
 import PlanRasterMobil from '../components/PlanRasterMobil'
-import AuswahlOverlay from '../components/AuswahlOverlay'
+import AufgabenZeilenOverlay from '../components/AufgabenZeilenOverlay'
 import CardContainer from '../components/CardContainer'
 import Button from '../components/Button'
+import StatistikChips from '../components/StatistikChips'
 import useHorizontalSwipe from '../hooks/useHorizontalSwipe'
 
 export default function Plan() {
@@ -33,8 +33,7 @@ export default function Plan() {
   const bereichId = urlBereichId != null && Number.isFinite(urlBereichId) ? urlBereichId : null
   const [hinweis, setHinweis] = useState<string | null>(null)
   const [overlay, setOverlay] = useState<
-    | { typ: 'aufgabe'; aufgabeId: number; datum: string; belegterName: string | null }
-    | { typ: 'zeitfenster'; zeitfensterId: number; zeitfensterName: string; datum: string }
+    | { zeitfensterId: number; datum: string }
     | null
   >(null)
 
@@ -61,6 +60,15 @@ export default function Plan() {
     retry: false,
   })
 
+  const statistikAbfrage = useQuery<Statistik>({
+    queryKey: ['statistik', teamId, bereichId, zielWoche.isoJahr, zielWoche.isoWoche],
+    queryFn: () => api.get(`/teams/${teamId}/statistik`, {
+      params: { bereichId, isoJahr: zielWoche.isoJahr, isoWoche: zielWoche.isoWoche },
+    }).then(r => r.data),
+    enabled: teamId != null && bereichId != null && !!planAbfrage.data,
+    retry: false,
+  })
+
   const sensoren = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } })
@@ -84,12 +92,9 @@ export default function Plan() {
     }
   }
 
-  async function freigeben(aufgabeId: number, datum: string) {
-    const zeile = planAbfrage.data?.gruppen.flatMap(g => g.zeilen).find(z => z.aufgabe.id === aufgabeId)
-    const zuteilung = zeile?.zuteilungen.find(z => z.datum === datum)
-    if (!zuteilung?.id) return
+  async function freigeben(zuteilungId: number) {
     try {
-      await api.delete(`/teams/${teamId}/zuteilungen/${zuteilung.id}`)
+      await api.delete(`/teams/${teamId}/zuteilungen/${zuteilungId}`)
       nachErfolg()
     } catch (e) {
       nachFehler(e)
@@ -116,8 +121,8 @@ export default function Plan() {
       zuweisen(aufgabeId, datum, mitgliedId)
       return
     }
-    if (ziel.startsWith('zf-')) {
-      const rest = ziel.replace('zf-', '')
+    if (ziel.startsWith('slot-')) {
+      const rest = ziel.replace('slot-', '')
       const trenner = rest.indexOf('-')
       const zeitfensterId = Number(rest.slice(0, trenner))
       const datum = rest.slice(trenner + 1)
@@ -160,20 +165,35 @@ export default function Plan() {
   const istSollUnterschritten = planAbfrage.data?.mitglieder.some(m => m.sollUnterschritten) ?? false
   const istAktuelleWoche = isoNummer(zielWoche) === isoNummer(aktuelleIsoWocheJetzt())
   const wocheTitel = istAktuelleWoche
-    ? 'aktuelle Woche'
-    : isoNummer(zielWoche) < isoNummer(aktuelleIsoWocheJetzt()) ? 'vergangene Woche' : 'zukünftige Woche'
+    ? 'aktuell'
+    : isoNummer(zielWoche) < isoNummer(aktuelleIsoWocheJetzt()) ? 'vergangen' : 'zukünftig'
 
   return (
-    <div ref={swipeRef} className="md:h-full md:flex md:flex-col md:min-h-0">
+    <div ref={swipeRef} className="h-full flex flex-col min-h-0">
       {!isMobile && aktivesTeamName() && (
-        <div className="card px-4 py-2.5 text-sm mb-4 flex items-center justify-between" style={{ backgroundColor: 'var(--color-info-bg)' }}>
-          <span>
-            <span className="text-muted">Team: </span>
-            <span className="font-semibold">{aktivesTeamName()}</span>
-            <span className="text-muted ml-3">·</span>
-            <span className="font-semibold ml-3">{wocheLabel}</span>
-          </span>
-          <span className="text-xs text-muted">{wocheTitel}</span>
+        <div className="card px-4 py-2.5 text-sm mb-4 flex flex-col gap-2" style={{ backgroundColor: 'var(--color-info-bg)' }}>
+          <div className="flex items-center justify-between">
+            <span>
+              <span className="text-muted">Team: </span>
+              <span className="font-semibold">{aktivesTeamName()}</span>
+              <span className="text-muted ml-3">·</span>
+              <span className="font-semibold ml-3">{wocheLabel}</span>
+            </span>
+            <span className="text-xs text-muted">{wocheTitel}</span>
+          </div>
+          {statistikAbfrage.data && wocheTitel !== 'zukünftig' && (
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted shrink-0">Statistik</span>
+              <div className="min-w-0">
+                <StatistikChips
+                  sollWerte={Object.fromEntries((planAbfrage.data?.mitglieder ?? []).map(m => [m.id, m.soll]))}
+                  wochenweise={statistikAbfrage.data.wochenweise}
+                  monatlich={statistikAbfrage.data.monatlich}
+                  kumuliert={statistikAbfrage.data.kumuliert}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -186,7 +206,7 @@ export default function Plan() {
 
       <DndContext sensors={sensoren} onDragEnd={beimAblegen}>
       {isMobile ? (
-        <div className="px-3 pt-2 pb-1 flex flex-col gap-1.5">
+        <div className="px-3 pt-2 pb-1 flex flex-col gap-1.5 shrink-0">
           <div className="bg-card border border-border rounded-card px-3 py-2 mb-1 flex flex-col gap-1">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-sm font-semibold text-foreground truncate">
@@ -218,16 +238,22 @@ export default function Plan() {
                 </span>
               )}
             </div>
+            {statistikAbfrage.data && wocheTitel !== 'zukünftig' && (
+              <StatistikChips
+                sollWerte={Object.fromEntries((planAbfrage.data?.mitglieder ?? []).map(m => [m.id, m.soll]))}
+                wochenweise={statistikAbfrage.data.wochenweise}
+                monatlich={statistikAbfrage.data.monatlich}
+                kumuliert={statistikAbfrage.data.kumuliert}
+                kompakt
+              />
+            )}
           </div>
-          {planAbfrage.data && (
-            <PersonenLeiste mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} label={false} kompakt />
-          )}
         </div>
       ) : null}
 
-      <div style={isMobile ? { touchAction: 'pan-y' } : undefined}>
+      <div className="flex-1 min-h-0 flex flex-col" style={isMobile ? { touchAction: 'pan-y' } : undefined}>
         <CardContainer
-          className={isMobile ? 'max-md:bg-transparent max-md:border-0 max-md:shadow-none' : ''}
+          className={isMobile ? 'flex-1 min-h-0 max-md:bg-transparent max-md:border-0 max-md:shadow-none' : 'min-h-0'}
           title={isMobile ? null : `Wochenplan ${bereichName ? `— ${bereichName}` : ''}`}
           headerRight={isMobile ? null : (
             <div className="flex items-center gap-2">
@@ -256,12 +282,7 @@ export default function Plan() {
                 eigeneId,
                 istAdmin: !!istAdmin,
                 heute,
-                onBoxKlick: (aufgabeId, datum, belegterName) => setOverlay({ typ: 'aufgabe', aufgabeId, datum, belegterName }),
-                onZeitfensterKlick: (zeitfensterId, datum) => {
-                  const gruppe = planAbfrage.data?.gruppen.find(g => g.zeitfensterId === zeitfensterId)
-                  if (!gruppe) return
-                  setOverlay({ typ: 'zeitfenster', zeitfensterId, zeitfensterName: gruppe.zeitfensterName, datum })
-                },
+                onSlotKlick: (zeitfensterId, datum) => setOverlay({ zeitfensterId, datum }),
               }}
             />
           ) : (
@@ -271,12 +292,7 @@ export default function Plan() {
                 eigeneId,
                 istAdmin: !!istAdmin,
                 heute,
-                onBoxKlick: (aufgabeId, datum, belegterName) => setOverlay({ typ: 'aufgabe', aufgabeId, datum, belegterName }),
-                onZeitfensterKlick: (zeitfensterId, datum) => {
-                  const gruppe = planAbfrage.data?.gruppen.find(g => g.zeitfensterId === zeitfensterId)
-                  if (!gruppe) return
-                  setOverlay({ typ: 'zeitfenster', zeitfensterId, zeitfensterName: gruppe.zeitfensterName, datum })
-                },
+                onSlotKlick: (zeitfensterId, datum) => setOverlay({ zeitfensterId, datum }),
               }}
             />
           )}
@@ -284,36 +300,23 @@ export default function Plan() {
       </div>
       </DndContext>
 
-      {overlay && planAbfrage.data && (
-        overlay.typ === 'aufgabe' ? (
-          <AuswahlOverlay
+      {overlay && planAbfrage.data && (() => {
+        const gruppe = planAbfrage.data.gruppen.find(g => g.zeitfensterId === overlay.zeitfensterId)
+        if (!gruppe) return null
+        return (
+          <AufgabenZeilenOverlay
+            gruppe={gruppe}
+            datum={overlay.datum}
             mitglieder={planAbfrage.data.mitglieder}
             eigeneId={eigeneId}
-            onClose={() => setOverlay(null)}
-            belegterName={overlay.belegterName}
             erlaubt={overlay.datum >= heute || !!istAdmin}
-            onAuswaehlen={(mitgliedId) => {
-              zuweisen(overlay.aufgabeId, overlay.datum, mitgliedId)
-              setOverlay(null)
-            }}
-            onFreigeben={() => freigeben(overlay.aufgabeId, overlay.datum)}
-          />
-        ) : (
-          <AuswahlOverlay
-            mitglieder={planAbfrage.data.mitglieder}
-            eigeneId={eigeneId}
             onClose={() => setOverlay(null)}
-            belegterName={null}
-            erlaubt={overlay.datum >= heute || !!istAdmin}
-            titel={`Alle Aufgaben von „${overlay.zeitfensterName}" übernehmen?`}
-            untertitel="Es wird eine Zuteilung pro Aufgabe erstellt — bestehende werden überschrieben."
-            onAuswaehlen={(mitgliedId) => {
-              zeitfensterZuweisen(overlay.zeitfensterId, overlay.datum, mitgliedId)
-              setOverlay(null)
-            }}
+            onZuweisen={(aufgabeId, mitgliedId) => zuweisen(aufgabeId, overlay.datum, mitgliedId)}
+            onZuweisenAlle={(mitgliedId) => zeitfensterZuweisen(overlay.zeitfensterId, overlay.datum, mitgliedId)}
+            onFreigeben={(zuteilungId) => freigeben(zuteilungId)}
           />
         )
-      )}
+      })()}
 
       <div className="h-10 md:hidden" />
     </div>

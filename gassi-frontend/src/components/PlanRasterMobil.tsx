@@ -1,8 +1,9 @@
 import { useDroppable } from '@dnd-kit/core'
-import type { PlanDto, Zuteilung } from '../types'
+import type { MitgliedPlanInfo, PlanDto, Zuteilung, ZeitfensterGruppe } from '../types'
 import { wochentagKurz, tagKurz } from '../utils/datum'
 import type { ReactNode } from 'react'
 import type { RasterAktionen } from './PlanRaster'
+import Avatar from './Avatar'
 
 export default function PlanRasterMobil({
   plan,
@@ -12,27 +13,21 @@ export default function PlanRasterMobil({
   aktionen: RasterAktionen
 }) {
   return (
-    <div className="px-2 pt-1 pb-2">
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed border-collapse">
+    <div className="px-2 pt-1 pb-2 h-full flex flex-col min-h-0">
+      <div className="flex-1 min-h-0">
+        <table className="w-full table-fixed border-collapse h-full">
           <thead className="bg-elevated table-header">
             <tr>
               <th className="w-[44px] min-w-[44px] border-b border-border" />
               {plan.gruppen.map(gruppe => (
                 <th
                   key={gruppe.zeitfensterId}
-                  colSpan={gruppe.zeilen.length}
+                  colSpan={1}
                   className="px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted border-b border-l border-border truncate select-none"
                   title={gruppe.zeitfensterName}
                 >
                   {gruppe.zeitfensterName}
                 </th>
-              ))}
-            </tr>
-            <tr>
-              <th className="w-[44px] min-w-[44px] border-b border-border select-none" />
-              {plan.gruppen.map(gruppe => (
-                <MobilKopfzeile key={gruppe.zeitfensterId} gruppe={gruppe} />
               ))}
             </tr>
           </thead>
@@ -44,30 +39,6 @@ export default function PlanRasterMobil({
         </table>
       </div>
     </div>
-  )
-}
-
-function MobilKopfzeile({
-  gruppe,
-}: {
-  gruppe: PlanDto['gruppen'][number]
-}) {
-  return (
-    <>
-      {gruppe.zeilen.map(zeile => (
-        <th
-          key={zeile.aufgabe.id}
-          className="border-b border-l border-border px-0.5 py-0.5 select-none"
-        >
-          <div
-            className="text-[11px] font-medium text-muted leading-none h-[24px] flex items-end justify-center overflow-hidden whitespace-nowrap"
-            title={zeile.aufgabe.name}
-          >
-            {zeile.aufgabe.name}
-          </div>
-        </th>
-      ))}
-    </>
   )
 }
 
@@ -111,15 +82,28 @@ function MobilZellgruppe({
   plan: PlanDto
   aktionen: RasterAktionen
 }) {
+  if (gruppe.zeilen.length > 1) {
+    return (
+      <td className="border-l border-b border-border p-1 align-top h-full">
+        <MobilZeitfensterSlot
+          gruppe={gruppe}
+          datum={datum}
+          mitglieder={plan.mitglieder}
+          {...aktionen}
+        />
+      </td>
+    )
+  }
   return (
     <>
       {gruppe.zeilen.map(zeile => (
         <td
           key={zeile.aufgabe.id}
-          className="border-l border-b border-border p-1 align-top"
+          className="border-l border-b border-border p-1 align-top h-full"
         >
           <MobilZellenBox
             aufgabeId={zeile.aufgabe.id}
+            zeitfensterId={gruppe.zeitfensterId}
             datum={datum}
             zuteilung={zeile.zuteilungen.find(z => z.datum === datum) ?? null}
             mitglieder={plan.mitglieder}
@@ -131,14 +115,99 @@ function MobilZellgruppe({
   )
 }
 
+function MobilZeitfensterSlot({
+  gruppe,
+  datum,
+  mitglieder,
+  onSlotKlick,
+}: {
+  gruppe: ZeitfensterGruppe
+  datum: string
+  mitglieder: PlanDto['mitglieder']
+} & Pick<RasterAktionen, 'onSlotKlick'>) {
+  const { setNodeRef, isOver } = useDroppable({ id: `slot-${gruppe.zeitfensterId}-${datum}` })
+  const chips: { key: string; person: MitgliedPlanInfo | null; name: string }[] = []
+  let offen = false
+  for (const zeile of gruppe.zeilen) {
+    const zuteilung = zeile.zuteilungen.find(z => z.datum === datum) ?? null
+    if (zuteilung?.mitgliedId) {
+      if (chips.some(c => c.key === `m-${zuteilung.mitgliedId}`)) continue
+      const person = mitglieder.find(m => m.id === zuteilung.mitgliedId) ?? null
+      chips.push({
+        key: `m-${zuteilung.mitgliedId}`,
+        person,
+        name: person?.anzeigename ?? zuteilung.anzeigename ?? '',
+      })
+    } else {
+      offen = true
+    }
+  }
+
+  const inhalt: ReactNode = chips.length > 0 ? (
+    <div className={`flex gap-1 h-full w-full ${chips.length > 1 ? 'flex-row' : 'flex-col'}`}>
+      {chips.map(c => (
+        <MobilSlotChip key={c.key} person={c.person} name={c.name} />
+      ))}
+      {offen && <MobilOffenChip dot={false} />}
+    </div>
+  ) : (
+    <MobilOffenChip dot />
+  )
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`cursor-pointer min-h-[38px] h-full flex items-stretch ${isOver ? 'outline-2 outline-dashed rounded-badge outline-accent' : ''}`}
+      onClick={() => onSlotKlick(gruppe.zeitfensterId, datum)}
+      style={{ touchAction: 'none' }}
+    >
+      {inhalt}
+    </div>
+  )
+}
+
+function MobilSlotChip({ person, name }: { person: MitgliedPlanInfo | null; name: string }) {
+  return (
+    <div
+      className="flex items-center justify-center flex-1 min-h-[32px] rounded-badge border border-border-hover bg-accent-soft px-1 overflow-hidden text-foreground"
+      title={name}
+    >
+      <Avatar
+        mitgliedId={person?.id ?? null}
+        anzeigename={name}
+        avatarUrl={person?.avatarUrl ?? null}
+        groesse="md"
+        className="h-4/5 aspect-square w-auto text-[11px]"
+      />
+    </div>
+  )
+}
+
+function MobilOffenChip({ dot }: { dot: boolean }) {
+  if (dot) {
+    return (
+      <div className="flex-1 min-h-[32px] rounded-badge flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent-soft)' }}>
+        <span className="h-1 w-1 rounded-full" style={{ backgroundColor: 'var(--color-accent-ring)' }} aria-hidden="true" />
+      </div>
+    )
+  }
+  return (
+    <div className="flex-1 min-h-[32px] rounded-badge border border-dashed flex items-center justify-center" style={{ borderColor: 'var(--color-accent-ring)', backgroundColor: 'var(--color-accent-soft)' }}>
+      <span className="text-[10px] text-accent leading-none px-1">offen</span>
+    </div>
+  )
+}
+
 function MobilZellenBox({
   aufgabeId,
+  zeitfensterId,
   datum,
   zuteilung,
   mitglieder,
-  onBoxKlick,
+  onSlotKlick,
 }: {
   aufgabeId: number
+  zeitfensterId: number
   datum: string
   zuteilung: Zuteilung | null
   mitglieder: PlanDto['mitglieder']
@@ -150,14 +219,19 @@ function MobilZellenBox({
 
   const inhalt: ReactNode = person ? (
     <div
-      className="flex items-center justify-center h-[36px] rounded-badge border px-0.5 overflow-hidden"
-      style={{ backgroundColor: `${person.farbe}1f`, borderColor: person.farbe, color: person.farbe }}
+      className="flex items-center justify-center flex-1 min-h-[32px] rounded-badge border border-border-hover bg-accent-soft px-1 overflow-hidden text-foreground"
       title={person.anzeigename}
     >
-      <span className="text-[11px] font-semibold leading-none truncate">{erstesWort(person.anzeigename)}</span>
+      <Avatar
+        mitgliedId={person.id}
+        anzeigename={person.anzeigename}
+        avatarUrl={person.avatarUrl}
+        groesse="md"
+        className="h-4/5 aspect-square w-auto text-[11px]"
+      />
     </div>
   ) : (
-    <div className="h-[36px] rounded-badge flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent-soft)' }}>
+    <div className="flex-1 min-h-[32px] rounded-badge flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent-soft)' }}>
       <span className="h-1 w-1 rounded-full" style={{ backgroundColor: 'var(--color-accent-ring)' }} aria-hidden="true" />
     </div>
   )
@@ -165,15 +239,11 @@ function MobilZellenBox({
   return (
     <div
       ref={setNodeRef}
-      className={`cursor-pointer ${isOver ? 'outline-2 outline-dashed rounded-badge outline-accent' : ''}`}
-      onClick={() => onBoxKlick(aufgabeId, datum, zuteilung?.anzeigename ?? null)}
+      className={`cursor-pointer h-full flex items-stretch ${isOver ? 'outline-2 outline-dashed rounded-badge outline-accent' : ''}`}
+      onClick={() => onSlotKlick(zeitfensterId, datum)}
       style={{ touchAction: 'none' }}
     >
       {inhalt}
     </div>
   )
-}
-
-function erstesWort(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? name
 }

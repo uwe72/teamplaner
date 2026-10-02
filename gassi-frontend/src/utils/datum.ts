@@ -14,12 +14,12 @@ export function tagKurz(datum: string): string {
 }
 
 export function wochenbereich(woche: IsoWoche): string {
-  const format = (d: Date, mitJahr: boolean) =>
-    d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', ...(mitJahr ? { year: 'numeric' } : {}) })
+  const format = (d: Date) =>
+    d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
   const montag = isoMontag(woche.isoJahr, woche.isoWoche)
   const sonntag = new Date(montag)
   sonntag.setUTCDate(montag.getUTCDate() + 6)
-  return `${format(montag, false)} - ${format(sonntag, true)}`
+  return `${format(montag)} - ${format(sonntag)}`
 }
 
 export interface IsoWoche {

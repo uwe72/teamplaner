@@ -1,5 +1,6 @@
 import { useDraggable } from '@dnd-kit/core'
 import type { MitgliedPlanInfo } from '../types'
+import Avatar from './Avatar'
 
 export default function PersonenLeiste({
   mitglieder,
@@ -39,19 +40,21 @@ function PersonChip({ m, kompakt }: { m: MitgliedPlanInfo; kompakt: boolean }) {
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`inline-flex items-center text-xs font-medium whitespace-nowrap rounded-badge border transition-colors ${kompakt ? 'gap-1.5 h-7 px-2 shrink-0' : 'gap-2 h-6 px-2.5'}`}
+      className={`inline-flex items-center text-xs font-medium whitespace-nowrap rounded-badge border border-border-hover bg-surface transition-colors ${kompakt ? 'gap-1.5 h-7 px-2 shrink-0' : 'gap-2 h-6 px-2.5'}`}
       style={{
         transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
-        backgroundColor: `${m.farbe}1f`,
-        borderColor: m.farbe,
-        color: m.farbe,
         zIndex: isDragging ? 50 : undefined,
         position: 'relative',
         touchAction: 'none',
         userSelect: 'none',
       }}
     >
-      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: m.farbe }} />
+      <Avatar
+        mitgliedId={m.id}
+        anzeigename={m.anzeigename}
+        avatarUrl={m.avatarUrl}
+        groesse="xs"
+      />
       {m.anzeigename}
       <span
         className="inline-flex items-center px-1.5 h-4 rounded-badge text-[10px] font-semibold tabular-nums"

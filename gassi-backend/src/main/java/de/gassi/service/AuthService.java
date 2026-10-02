@@ -53,7 +53,6 @@ public class AuthService {
             .email(email)
             .passwortHash(passwordEncoder.encode(passwort))
             .anzeigename(login)
-            .farbe("#3f3a34")
             .rolle(rolle)
             .aktiv(true)
             .build();
@@ -139,7 +138,6 @@ public class AuthService {
     public ProfilDto profilAendern(ProfilAendernAnfrage anfrage) {
         Teammitglied nutzer = aktuellerNutzerService.aktuellesMitglied();
         nutzer.setAnzeigename(anfrage.anzeigename().trim());
-        nutzer.setFarbe(anfrage.farbe());
         teammitgliedRepository.save(nutzer);
         return profil(nutzer.getId());
     }
@@ -152,9 +150,14 @@ public class AuthService {
             throw new BusinessFehler("KEINE_BERECHTIGUNG", "Nur dein eigenes Profil.");
         }
         return new ProfilDto(nutzer.getId(), nutzer.getLogin(), nutzer.getEmail(), nutzer.getAnzeigename(),
-            nutzer.getFarbe(), nutzer.getRolle().name(),
+            nutzer.getRolle().name(),
             nutzer.getTeam() == null ? null : nutzer.getTeam().getId(),
-            nutzer.getTeam() == null ? null : nutzer.getTeam().getName());
+            nutzer.getTeam() == null ? null : nutzer.getTeam().getName(),
+            hatAvatar(nutzer) ? "/api/auth/me/avatar" : null);
+    }
+
+    public static boolean hatAvatar(Teammitglied m) {
+        return m.getAvatar() != null && m.getAvatar().length > 0;
     }
 
     private void pruefeLoginFormat(String login) {
@@ -178,6 +181,7 @@ public class AuthService {
             mitglied.getRolle().name(), teamId);
         boolean teamOeffen = mitglied.getRolle() == Rolle.ADMIN && teamId == null;
         return new AuthAntwort(token, refreshToken, mitglied.getId(), mitglied.getLogin(), mitglied.getAnzeigename(),
-            mitglied.getFarbe(), mitglied.getRolle().name(), teamId, teamName, teamOeffen);
+            mitglied.getRolle().name(), teamId, teamName, teamOeffen,
+            hatAvatar(mitglied) ? "/api/auth/me/avatar" : null);
     }
 }

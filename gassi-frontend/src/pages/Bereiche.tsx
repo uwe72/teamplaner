@@ -729,7 +729,6 @@ function SollTabelle({ bereichId }: { bereichId: number }) {
       <div className="space-y-1.5">
         {daten.eintraege.map(e => (
           <div key={e.mitgliedId} className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: e.farbe }} />
             <span className={`text-sm flex-1 min-w-0 truncate ${e.aktiv ? '' : 'text-subtle'}`}>
               {e.anzeigename}{!e.aktiv && ' (inaktiv)'}
             </span>

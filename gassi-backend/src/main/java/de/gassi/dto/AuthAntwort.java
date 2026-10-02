@@ -6,10 +6,10 @@ public record AuthAntwort(
     Long id,
     String login,
     String anzeigename,
-    String farbe,
     String rolle,
     Long teamId,
     String teamName,
-    boolean teamOeffen
+    boolean teamOeffen,
+    String avatarUrl
 ) {
 }

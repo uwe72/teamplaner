@@ -6,13 +6,13 @@ public record StatistikDto(
     Long bereichId,
     String bereichName,
     List<StatistikZeile> wochenweise,
+    List<StatistikZeile> monatlich,
     List<StatistikZeile> kumuliert
 ) {
 
     public record StatistikZeile(
         Long mitgliedId,
         String anzeigename,
-        String farbe,
         boolean aktiv,
         long ist,
         long moeglich,

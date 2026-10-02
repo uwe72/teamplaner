@@ -81,10 +81,10 @@ public class PlanService {
                     .map(tag -> {
                         Zuteilung z = nachTag.get(tag);
                         if (z == null) {
-                            return new ZuteilungDto(null, aufgabe.getId(), null, null, null, tag);
+                            return new ZuteilungDto(null, aufgabe.getId(), null, null, tag);
                         }
                         return new ZuteilungDto(z.getId(), aufgabe.getId(), z.getMitglied().getId(),
-                            z.getMitglied().getAnzeigename(), z.getMitglied().getFarbe(), z.getDatum());
+                            z.getMitglied().getAnzeigename(), z.getDatum());
                     })
                     .toList();
                 zeilen.add(new PlanDto.AufgabeZeile(zuAufgabeDto(aufgabe), boxen));
@@ -102,8 +102,9 @@ public class PlanService {
                     .map(s -> s.getWert())
                     .orElse(0);
                 long ist = istProMitglied.getOrDefault(m.getId(), 0L);
-                return new PlanDto.MitgliedPlanInfo(m.getId(), m.getAnzeigename(), m.getFarbe(), soll, ist,
-                    ist < soll);
+                return new PlanDto.MitgliedPlanInfo(m.getId(), m.getAnzeigename(), soll, ist,
+                    ist < soll, AvatarService.avatarUrlFuer(teamId, m.getId(),
+                        m.getAvatar() != null && m.getAvatar().length > 0));
             })
             .toList();
 

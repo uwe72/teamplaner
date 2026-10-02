@@ -2,11 +2,9 @@ package de.gassi.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 
 public record MitgliedAendernAnfrage(
     @NotBlank String anzeigename,
-    @NotBlank @Pattern(regexp = "^#[0-9a-fA-F]{6}$") String farbe,
     @NotBlank @Email String email,
     String rolle,
     Boolean aktiv,

@@ -55,7 +55,7 @@ public class VerwaltungsTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"%s\",\"farbe\":\"#ff0000\"}"
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"%s\"}"
                     .formatted(login, login, anzeigename)))
             .andExpect(status().isCreated());
         return anmelden(login, "pw").get("token").asText();
@@ -75,7 +75,7 @@ public class VerwaltungsTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
                 .header("Authorization", "Bearer " + mitgliedToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"login\":\"hacker\",\"email\":\"h@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"H\",\"farbe\":\"#000000\"}"))
+                .content("{\"login\":\"hacker\",\"email\":\"h@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"H\"}"))
             .andExpect(status().isForbidden());
 
         mvc.perform(MockMvcRequestBuilders.put("/api/teams/%d/bereiche/%d/soll".formatted(teamId, bereichId))
@@ -141,7 +141,7 @@ public class VerwaltungsTest extends AbstractIntegrationTest {
         mvc.perform(put("/api/teams/%d/mitglieder/%d".formatted(teamId, adminId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"anzeigename\":\"Admin\",\"farbe\":\"#3f3a34\",\"email\":\"admin@example.de\",\"aktiv\":false}"))
+                .content("{\"anzeigename\":\"Admin\",\"email\":\"admin@example.de\",\"aktiv\":false}"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("LETZTER_ADMIN"));
     }
@@ -153,7 +153,7 @@ public class VerwaltungsTest extends AbstractIntegrationTest {
         MvcResult angelegt = mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\",\"farbe\":\"#ff0000\",\"rolle\":\"ADMIN\"}"
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\",\"rolle\":\"ADMIN\"}"
                     .formatted(login, login)))
             .andExpect(status().isCreated())
             .andReturn();
@@ -162,7 +162,7 @@ public class VerwaltungsTest extends AbstractIntegrationTest {
         mvc.perform(put("/api/teams/%d/mitglieder/%d".formatted(teamId, id))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"anzeigename\":\"Anna B.\",\"farbe\":\"#00ff00\",\"email\":\"%s@example.de\",\"aktiv\":false}"
+                .content("{\"anzeigename\":\"Anna B.\",\"email\":\"%s@example.de\",\"aktiv\":false}"
                     .formatted(login)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.anzeigename").value("Anna B."))
@@ -188,7 +188,7 @@ public class VerwaltungsTest extends AbstractIntegrationTest {
         MvcResult angelegt = mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\",\"farbe\":\"#ff0000\"}"
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\"}"
                     .formatted(login, login)))
             .andExpect(status().isCreated())
             .andReturn();
