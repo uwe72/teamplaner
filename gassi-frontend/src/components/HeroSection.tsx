@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useMatch } from 'react-router-dom'
 import Badge from './Badge'
 import { aktivesTeamName, sitzungLaden } from '../api/client'
 import useBereiche from '../hooks/useBereiche'
+import PlanWaehlerSheet from './week/PlanWaehler'
 
 interface HeroSectionProps {
   collapsed: boolean
@@ -23,6 +25,7 @@ export default function HeroSection({ collapsed, onMenuClick }: HeroSectionProps
   const bereichName = planMatch
     ? (bereicheAbfrage.data ?? []).find(b => b.id === Number(planMatch.params.bereichId))?.name ?? null
     : null
+  const [planWaehlerOffen, setPlanWaehlerOffen] = useState(false)
 
   return (
     <div className="hero relative h-[80px] md:h-[102px] shrink-0 overflow-hidden bg-header">
@@ -57,12 +60,27 @@ export default function HeroSection({ collapsed, onMenuClick }: HeroSectionProps
             {teamName && (
               <div className="flex items-center gap-2 mt-0.5 min-w-0">
                 <Badge variant="solid">{teamName}</Badge>
-                {bereichName && <Badge variant="solid">{bereichName}</Badge>}
+                {bereichName && planMatch ? (
+                  <button
+                    type="button"
+                    className="md:hidden cursor-pointer"
+                    aria-label={`Plan wechseln — aktuell: ${bereichName}`}
+                    onClick={() => setPlanWaehlerOffen(true)}
+                  >
+                    <Badge variant="solid">{bereichName} ▾</Badge>
+                  </button>
+                ) : bereichName ? (
+                  <span className="hidden md:block"><Badge variant="solid">{bereichName}</Badge></span>
+                ) : null}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {planMatch && bereichName && (
+        <PlanWaehlerSheet offen={planWaehlerOffen} schliessen={() => setPlanWaehlerOffen(false)} />
+      )}
     </div>
   )
 }

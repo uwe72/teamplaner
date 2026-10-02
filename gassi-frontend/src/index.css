@@ -4,6 +4,25 @@
 :root {
   color-scheme: light;
 
+  /* Teamplaner Wochenansicht (mobil) */
+  --tp-ground: #E7E5E4;
+  --tp-surface: #FFFFFF;
+  --tp-soft: #DAD7D4;
+  --tp-ink: #1F1D1B;
+  --tp-muted: #5E5954;
+  --tp-accent: #3B3631;
+  --tp-on-accent: #FFFFFF;
+  --tp-mine: #DEDAD5;
+  --tp-weekend: #DEDBD8;
+  --tp-photo: #A8A29C;
+  --tp-free: #9A5B00;
+  --tp-free-bg: #FFEBC2;
+  --tp-free-border: #E7B45A;
+  --tp-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --tp-shadow-avatar: 0 3px 10px rgba(0, 0, 0, 0.18);
+  --tp-radius-cell: 20px;
+  --tp-radius-pill: 16px;
+
   /* Flaechen */
   --ffl-sidebar: #1c1917;
   --ffl-sidebar-hover: #292524;
@@ -25,7 +44,7 @@
   --ffl-border-strong: #a8a29e;
 
   /* Akzent */
-  --ffl-accent: #3f3a34;
+  --ffl-accent: #3B3631;
   --ffl-accent-hover: #2d2a26;
   --ffl-accent-light: #6b6258;
   --ffl-accent-soft: #ede9e3;
@@ -78,7 +97,7 @@
 
   --row-height: 40px;
 
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Nunito', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -787,6 +806,48 @@ body {
   animation:ffl-board-spin .8s linear infinite;
 }
 @keyframes ffl-board-spin{to{transform:rotate(360deg)}}
+
+/* ================= Teamplaner Wochenansicht (mobil) ================= */
+
+.tp-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes tp-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.tp-pulse {
+  animation: tp-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes tp-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.tp-pop {
+  animation: tp-pop 0.38s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-pulse,
+  .tp-pop {
+    animation: none;
+  }
+}
+
+.tp-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tp-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
 .ffl-board__pic--initials{
   display:grid; place-items:center; width:100%; height:100%;
   background:linear-gradient(180deg,var(--frame-a),var(--frame-b));

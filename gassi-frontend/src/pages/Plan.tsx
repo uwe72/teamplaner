@@ -5,18 +5,21 @@ import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, type DragE
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { aktivesTeamId, aktivesTeamName, sitzungLaden } from '../api/client'
 import api from '../api/client'
-import type { FehlerAntwort, PlanDto, Statistik } from '../types'
+import type { FehlerAntwort, PlanDto, Statistik, Zuteilung } from '../types'
 import { aktuelleIsoWocheJetzt, heutigesDatum, isoNummer, verschiebeIsoWoche, wochenbereich, type IsoWoche } from '../utils/datum'
 import { holeEigeneId } from '../utils/eigeneId'
 import useIsMobile from '../hooks/useIsMobile'
 import useBereiche from '../hooks/useBereiche'
 import PlanRaster from '../components/PlanRaster'
-import PlanRasterMobil from '../components/PlanRasterMobil'
 import AufgabenZeilenOverlay from '../components/AufgabenZeilenOverlay'
 import CardContainer from '../components/CardContainer'
 import Button from '../components/Button'
 import Badge from '../components/Badge'
 import StatistikChips from '../components/StatistikChips'
+import WeekBar from '../components/week/WeekBar'
+import PeopleProgress from '../components/week/PeopleProgress'
+import WeekRaster, { type ZeitfensterZellInfo } from '../components/week/WeekRaster'
+import type { SlotCellAktionen } from '../components/week/SlotCell'
 import useHorizontalSwipe from '../hooks/useHorizontalSwipe'
 
 export default function Plan() {
@@ -37,6 +40,7 @@ export default function Plan() {
     | { zeitfensterId: number; datum: string }
     | null
   >(null)
+  const [popCellKey, setPopCellKey] = useState<string | null>(null)
 
   const bereicheAbfrage = useBereiche()
 
@@ -75,31 +79,126 @@ export default function Plan() {
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } })
   )
 
+  function zuteilungFinden(aufgabeId: number, datum: string): Zuteilung | null {
+    return planAbfrage.data?.gruppen
+      .flatMap(g => g.zeilen)
+      .find(z => z.aufgabe.id === aufgabeId)
+      ?.zuteilungen.find(z => z.datum === datum) ?? null
+  }
+
+  function optimistischZuweisen(aufgabeId: number, datum: string, mitgliedId: number) {
+    queryClient.setQueryData<PlanDto>(
+      ['plan', teamId, bereichId, zielWoche.isoJahr, zielWoche.isoWoche],
+      alt => {
+        if (!alt) return alt
+        const person = alt.mitglieder.find(m => m.id === mitgliedId)
+        return {
+          ...alt,
+          gruppen: alt.gruppen.map(g => ({
+            ...g,
+            zeilen: g.zeilen.map(z => {
+              if (z.aufgabe.id !== aufgabeId) return z
+              const rest = z.zuteilungen.filter(t => t.datum !== datum)
+              return {
+                ...z,
+                zuteilungen: [...rest, { id: null, aufgabeId, mitgliedId, anzeigename: person?.anzeigename ?? null, datum }],
+              }
+            }),
+          })),
+          mitglieder: alt.mitglieder.map(m =>
+            m.id === mitgliedId ? { ...m, ist: m.ist + 1 } : m,
+          ),
+        }
+      },
+    )
+  }
+
+  function optimistischFreigeben(aufgabeId: number, datum: string, mitgliedId: number) {
+    queryClient.setQueryData<PlanDto>(
+      ['plan', teamId, bereichId, zielWoche.isoJahr, zielWoche.isoWoche],
+      alt => {
+        if (!alt) return alt
+        return {
+          ...alt,
+          gruppen: alt.gruppen.map(g => ({
+            ...g,
+            zeilen: g.zeilen.map(z => {
+              if (z.aufgabe.id !== aufgabeId) return z
+              return { ...z, zuteilungen: z.zuteilungen.filter(t => !(t.datum === datum && t.mitgliedId === mitgliedId)) }
+            }),
+          })),
+          mitglieder: alt.mitglieder.map(m =>
+            m.id === mitgliedId ? { ...m, ist: Math.max(0, m.ist - 1) } : m,
+          ),
+        }
+      },
+    )
+  }
+
   async function zuweisen(aufgabeId: number, datum: string, mitgliedId: number) {
+    const vorh = zuteilungFinden(aufgabeId, datum)
+    if (vorh?.mitgliedId && datum < heute && !istAdmin) {
+      setHinweis('Vergangene Tage dürfen nur von einem Admin geändert werden.')
+      return
+    }
+    optimistischZuweisen(aufgabeId, datum, mitgliedId)
+    setPopCellKey(`box-${aufgabeId}-${datum}`)
     try {
       await api.post(`/teams/${teamId}/zuteilungen`, { aufgabeId, datum, mitgliedId })
       nachErfolg()
     } catch (e) {
       nachFehler(e)
+    } finally {
+      window.setTimeout(() => setPopCellKey(k => (k === `box-${aufgabeId}-${datum}` ? null : k)), 450)
     }
   }
 
   async function zeitfensterZuweisen(zeitfensterId: number, datum: string, mitgliedId: number) {
+    const gruppe = planAbfrage.data?.gruppen.find(g => g.zeitfensterId === zeitfensterId)
+    if (!gruppe) return
+    for (const zeile of gruppe.zeilen) {
+      const vorh = zeile.zuteilungen.find(z => z.datum === datum)
+      if (vorh?.mitgliedId && datum < heute && !istAdmin) {
+        setHinweis('Vergangene Tage dürfen nur von einem Admin geändert werden.')
+        return
+      }
+    }
+    if (datum < heute && !istAdmin) {
+      setHinweis('Vergangene Tage dürfen nur von einem Admin geändert werden.')
+      return
+    }
+    for (const zeile of gruppe.zeilen) {
+      optimistischZuweisen(zeile.aufgabe.id, datum, mitgliedId)
+      setPopCellKey(`box-${zeile.aufgabe.id}-${datum}`)
+    }
     try {
       await api.post(`/teams/${teamId}/zeitfenster/${zeitfensterId}/zuteilungen`, { datum, mitgliedId })
       nachErfolg()
     } catch (e) {
       nachFehler(e)
+    } finally {
+      window.setTimeout(() => setPopCellKey(null), 450)
     }
   }
 
-  async function freigeben(zuteilungId: number) {
+  async function freigeben(zuteilungId: number, aufgabeId?: number, mitgliedId?: number) {
+    if (aufgabeId != null && mitgliedId != null) {
+      const datum = zuteilungDatumFuer(aufgabeId, zuteilungId)
+      if (datum) optimistischFreigeben(aufgabeId, datum, mitgliedId)
+    }
     try {
       await api.delete(`/teams/${teamId}/zuteilungen/${zuteilungId}`)
       nachErfolg()
     } catch (e) {
       nachFehler(e)
     }
+  }
+
+  function zuteilungDatumFuer(aufgabeId: number, zuteilungId: number): string | null {
+    const alle = planAbfrage.data?.gruppen
+      .flatMap(g => g.zeilen)
+      .find(z => z.aufgabe.id === aufgabeId)?.zuteilungen ?? []
+    return alle.find(t => t.id === zuteilungId)?.datum ?? null
   }
 
   function beimAblegen(ereignis: DragEndEvent) {
@@ -113,8 +212,7 @@ export default function Plan() {
       const aufgabeId = Number(rest.slice(0, trenner))
       const datum = rest.slice(trenner + 1)
       if (!Number.isFinite(aufgabeId) || !datum) return
-      const zuteilung = planAbfrage.data?.gruppen.flatMap(g => g.zeilen).find(z => z.aufgabe.id === aufgabeId)
-        ?.zuteilungen.find(z => z.datum === datum)
+      const zuteilung = zuteilungFinden(aufgabeId, datum)
       if (zuteilung && datum < heute && !istAdmin) {
         setHinweis('Vergangene Tage dürfen nur von einem Admin geändert werden.')
         return
@@ -146,6 +244,7 @@ export default function Plan() {
     const antwort = (e as { response?: { data?: FehlerAntwort } }).response?.data
     setHinweis(antwort ? `${antwort.message}` : 'Aktion fehlgeschlagen — bitte erneut versuchen.')
     queryClient.invalidateQueries({ queryKey: ['plan'] })
+    queryClient.invalidateQueries({ queryKey: ['statistik'] })
   }
 
   const wocheLabel = useMemo(() => `KW ${zielWoche.isoWoche}/${zielWoche.isoJahr} (${wochenbereich(zielWoche)})`, [zielWoche])
@@ -167,10 +266,55 @@ export default function Plan() {
     : isoNummer(zielWoche) < isoNummer(aktuelleIsoWocheJetzt()) ? 'vergangen' : 'zukünftig'
   const wocheBadgeVariant = istAktuelleWoche ? 'success' : wocheTitel === 'vergangen' ? 'muted' : 'soft'
 
+  const freieRunden = planAbfrage.data
+    ? planAbfrage.data.tage.reduce(
+        (summe, datum) =>
+          summe +
+          planAbfrage.data!.gruppen.flatMap(g => g.zeilen)
+            .filter(zeile => !(zeile.zuteilungen.some(z => z.datum === datum && z.mitgliedId != null)))
+            .length,
+        0,
+      )
+    : 0
+
+  const mobilerRasterAktionen: SlotCellAktionen | null = planAbfrage.data
+    ? {
+        eigeneId,
+        heute,
+        popCellKey,
+        onFreiKlick: (datum, zeitfensterId) => {
+          if (datum < heute && !istAdmin) {
+            setHinweis('Vergangene Tage dürfen nur von einem Admin geändert werden.')
+            return
+          }
+          const gruppe = planAbfrage.data?.gruppen.find(g => g.zeitfensterId === zeitfensterId)
+          if (!gruppe) return
+          if (gruppe.zeilen.length > 1) {
+            setOverlay({ zeitfensterId, datum })
+            return
+          }
+          const zeile = gruppe.zeilen[0]
+          if (zeile) {
+            zuweisen(zeile.aufgabe.id, datum, eigeneId)
+          }
+        },
+        onEigeneKlick: (datum, zuteilungId) => {
+          if (datum < heute && !istAdmin) {
+            setHinweis('Vergangene Tage dürfen nur von einem Admin geändert werden.')
+            return
+          }
+          freigeben(zuteilungId)
+        },
+        onBelegtKlick: (datum, zeitfensterId) => {
+          setOverlay({ zeitfensterId, datum })
+        },
+      }
+    : null
+
   return (
     <div ref={swipeRef} className="h-full flex flex-col min-h-0">
       {!isMobile && aktivesTeamName() && (
-        <div className="card px-4 py-2.5 text-sm mb-4 flex flex-col gap-2" style={{ backgroundColor: 'var(--color-info-bg)' }}>
+        <div className="card px-4 py-2.5 text-sm mb-4 flex flex-col gap-2 shrink-0" style={{ backgroundColor: 'var(--color-info-bg)' }}>
           <div className="flex items-center justify-between">
             <span className="flex items-center min-w-0">
               <span className="text-muted">Team: </span>
@@ -198,7 +342,7 @@ export default function Plan() {
       )}
 
       {hinweis && (
-        <div className="card p-3 text-sm mb-4 flex items-start justify-between" style={{ backgroundColor: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>
+        <div className="card p-3 text-sm mb-4 flex items-start justify-between shrink-0" style={{ backgroundColor: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>
           <span>{hinweis}</span>
           <button className="ml-2 underline shrink-0" onClick={() => setHinweis(null)}>ok</button>
         </div>
@@ -206,84 +350,67 @@ export default function Plan() {
 
       <DndContext sensors={sensoren} onDragEnd={beimAblegen}>
       {isMobile ? (
-        <div className="px-3 pt-2 pb-1 flex flex-col gap-1.5 shrink-0">
-          <div className="bg-card border border-border rounded-card px-3 py-2 mb-1 flex flex-col gap-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <button
-                className="inline-flex items-center shrink-0 px-2 h-6 rounded-badge text-[11px] font-bold uppercase tracking-wide"
-                style={{
-                  backgroundColor: istAktuelleWoche ? 'var(--color-accent)' : 'var(--color-accent-soft)',
-                  color: istAktuelleWoche ? '#fff' : 'var(--color-accent)',
-                  border: istAktuelleWoche ? 'none' : '1px solid var(--color-accent-ring)',
+        <div className="flex-1 min-h-0 flex flex-col tp-safe" style={{ touchAction: 'pan-y' }}>
+          {planAbfrage.data && mobilerRasterAktionen ? (
+            <>
+              <WeekBar
+                woche={zielWoche}
+                istAktuelleWoche={istAktuelleWoche}
+                freieRunden={freieRunden}
+                onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
+                onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
+                onHeute={() => setFokus(null)}
+              />
+              <PeopleProgress mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} />
+              <WeekRaster
+                plan={planAbfrage.data}
+                spalten={mobilerSpalten(planAbfrage.data)}
+                aktionen={mobilerRasterAktionen}
+              />
+            </>
+          ) : (
+            <div className="text-center py-8 text-muted">{planAbfrage.isLoading ? 'Laden...' : 'Kein Plan — lege zuerst einen Bereich und Aufgaben an.'}</div>
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col">
+          <CardContainer
+            className="flex-1"
+            title={`Wochenplan ${bereichName ? `— ${bereichName}` : ''}`}
+            headerRight={(
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, -1))} aria-label="Vorherige Woche">
+                  <ChevronLeft size={16} />
+                </Button>
+                <button
+                  className="text-xs text-muted hover:text-foreground underline underline-offset-2 disabled:opacity-50 disabled:no-underline"
+                  disabled={istAktuelleWoche}
+                  onClick={() => setFokus(null)}
+                >
+                  aktuelle Woche
+                </button>
+                <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, 1))} aria-label="Nächste Woche">
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+            )}
+          >
+            {planAbfrage.isLoading || !planAbfrage.data ? (
+              <div className="text-center py-8 text-muted">{planAbfrage.isLoading ? 'Laden...' : 'Kein Plan — lege zuerst einen Bereich und Aufgaben an.'}</div>
+            ) : (
+              <PlanRaster
+                plan={planAbfrage.data}
+                aktionen={{
+                  eigeneId,
+                  istAdmin: !!istAdmin,
+                  heute,
+                  onSlotKlick: (zeitfensterId, datum) => setOverlay({ zeitfensterId, datum }),
                 }}
-                disabled={istAktuelleWoche}
-                onClick={() => setFokus(null)}
-              >
-                {wocheTitel}
-              </button>
-              <Badge variant="soft" bordered>{wocheLabel}</Badge>
-              <span className="truncate" />
-            </div>
-            {statistikAbfrage.data && wocheTitel !== 'zukünftig' && (
-              <StatistikChips
-                sollWerte={Object.fromEntries((planAbfrage.data?.mitglieder ?? []).map(m => [m.id, m.soll]))}
-                wochenweise={statistikAbfrage.data.wochenweise}
-                monatlich={statistikAbfrage.data.monatlich}
-                kumuliert={statistikAbfrage.data.kumuliert}
-                kompakt
               />
             )}
-          </div>
+          </CardContainer>
         </div>
-      ) : null}
-
-      <div className="flex-1 min-h-0 flex flex-col" style={isMobile ? { touchAction: 'pan-y' } : undefined}>
-        <CardContainer
-          className={isMobile ? 'flex-1 min-h-0 max-md:bg-transparent max-md:border-0 max-md:shadow-none' : 'flex-1 min-h-0'}
-          title={isMobile ? null : `Wochenplan ${bereichName ? `— ${bereichName}` : ''}`}
-          headerRight={isMobile ? null : (
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, -1))} aria-label="Vorherige Woche">
-                <ChevronLeft size={16} />
-              </Button>
-              <button
-                className="text-xs text-muted hover:text-foreground underline underline-offset-2 disabled:opacity-50 disabled:no-underline"
-                disabled={istAktuelleWoche}
-                onClick={() => setFokus(null)}
-              >
-                aktuelle Woche
-              </button>
-              <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, 1))} aria-label="Nächste Woche">
-                <ChevronRight size={16} />
-              </Button>
-            </div>
-          )}
-        >
-          {planAbfrage.isLoading || !planAbfrage.data ? (
-            <div className="text-center py-8 text-muted">{planAbfrage.isLoading ? 'Laden...' : 'Kein Plan — lege zuerst einen Bereich und Aufgaben an.'}</div>
-          ) : isMobile ? (
-            <PlanRasterMobil
-              plan={planAbfrage.data}
-              aktionen={{
-                eigeneId,
-                istAdmin: !!istAdmin,
-                heute,
-                onSlotKlick: (zeitfensterId, datum) => setOverlay({ zeitfensterId, datum }),
-              }}
-            />
-          ) : (
-            <PlanRaster
-              plan={planAbfrage.data}
-              aktionen={{
-                eigeneId,
-                istAdmin: !!istAdmin,
-                heute,
-                onSlotKlick: (zeitfensterId, datum) => setOverlay({ zeitfensterId, datum }),
-              }}
-            />
-          )}
-        </CardContainer>
-      </div>
+      )}
       </DndContext>
 
       {overlay && planAbfrage.data && (() => {
@@ -304,7 +431,18 @@ export default function Plan() {
         )
       })()}
 
-      <div className="h-10 md:hidden" />
+      {isMobile ? null : <div className="h-10 md:hidden" />}
     </div>
   )
+}
+function mobilerSpalten(plan: PlanDto): ZeitfensterZellInfo[] {
+  const spalten: ZeitfensterZellInfo[] = []
+  for (const gruppe of plan.gruppen) {
+    if (gruppe.zeilen.length <= 1) {
+      spalten.push({ zeitfensterId: gruppe.zeitfensterId, zeitfensterName: gruppe.zeitfensterName, aufgabeId: gruppe.zeilen[0]?.aufgabe.id ?? null })
+    } else {
+      spalten.push({ zeitfensterId: gruppe.zeitfensterId, zeitfensterName: gruppe.zeitfensterName, aufgabeId: null })
+    }
+  }
+  return spalten
 }

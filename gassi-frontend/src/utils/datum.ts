@@ -22,6 +22,15 @@ export function wochenbereich(woche: IsoWoche): string {
   return `${format(montag)} - ${format(sonntag)}`
 }
 
+export function wochenbereichBis(woche: IsoWoche): string {
+  const format = (d: Date) =>
+    d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+  const montag = isoMontag(woche.isoJahr, woche.isoWoche)
+  const sonntag = new Date(montag)
+  sonntag.setUTCDate(montag.getUTCDate() + 6)
+  return `${format(montag)} bis ${format(sonntag)}`
+}
+
 export interface IsoWoche {
   isoJahr: number
   isoWoche: number
