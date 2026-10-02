@@ -6,6 +6,7 @@ const GROESSEN: Record<string, string> = {
   sm: 'w-5 h-5 text-[10px]',
   md: 'w-7 h-7 text-[11px]',
   xl: 'w-8 h-8 text-[12px]',
+  xxl: 'w-12 h-12 text-[18px]',
   lg: 'w-16 h-16 text-xl',
 }
 

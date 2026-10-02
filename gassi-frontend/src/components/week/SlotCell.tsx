@@ -74,7 +74,7 @@ export default function SlotCell({
     <button
       ref={setNodeRef}
       type="button"
-      className="flex items-center justify-center w-full h-full p-1"
+      className="flex items-center justify-center w-full h-full px-1 py-0.5"
       style={{
         borderRadius: 'var(--tp-radius-cell)',
         backgroundColor: bg,
@@ -101,7 +101,7 @@ export default function SlotCell({
         <span
           className={`relative inline-flex items-center justify-center ${pop ?? ''}`}
           style={{
-            height: 'min(60px, calc(100% - 8px))',
+            height: 'min(88px, calc(100% - 1px))',
             width: 'auto',
             aspectRatio: '1 / 1',
           }}

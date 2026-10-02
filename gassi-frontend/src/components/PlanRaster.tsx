@@ -172,13 +172,13 @@ function ZeitfensterSlot({
 function SlotChip({ person, name }: { person: MitgliedPlanInfo | null; name: string }) {
   return (
     <div
-      className="flex items-center gap-2 w-full min-h-[40px] px-2.5 py-1.5 rounded-badge border border-border-hover bg-accent-soft text-[13px] leading-none"
+      className="flex items-center gap-2 w-full min-h-[40px] px-2.5 py-0 rounded-badge border border-border-hover bg-accent-soft text-[13px] leading-none"
     >
       <Avatar
         mitgliedId={person?.id ?? null}
         anzeigename={name}
         avatarUrl={person?.avatarUrl ?? null}
-        groesse="xl"
+        groesse="xxl"
       />
       <span className="font-medium truncate text-foreground" title={name}>
         {name}
@@ -189,9 +189,9 @@ function SlotChip({ person, name }: { person: MitgliedPlanInfo | null; name: str
 
 function OffenChip() {
   return (
-    <div className="flex items-center justify-center w-full min-h-[40px] px-2.5 py-1.5 rounded-badge border border-border-hover bg-accent-soft">
+    <div className="flex items-center justify-center w-full min-h-[40px] px-2.5 py-0 rounded-badge border border-border-hover bg-accent-soft">
       <span
-        className="inline-flex items-center justify-center w-8 h-8 rounded-full text-[16px] font-bold shrink-0 text-danger"
+        className="inline-flex items-center justify-center w-12 h-12 rounded-full text-[22px] font-bold shrink-0 text-danger"
         style={{ boxShadow: '0 0 0 1.5px var(--color-danger)' }}
         title="offen"
       >
