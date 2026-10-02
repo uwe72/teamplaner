@@ -18,6 +18,10 @@
   --tp-free: #9A5B00;
   --tp-free-bg: #FFEBC2;
   --tp-free-border: #E7B45A;
+  --tp-prog-low: #E03131;
+  --tp-prog-mid: #F08C00;
+  --tp-prog-high: #74B816;
+  --tp-prog-done: #2F9E44;
   --tp-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   --tp-shadow-avatar: 0 3px 10px rgba(0, 0, 0, 0.18);
   --tp-radius-cell: 20px;
@@ -846,6 +850,16 @@ body {
 
 .tp-scroll-x::-webkit-scrollbar {
   display: none;
+}
+
+.tp-cell {
+  container-type: inline-size;
+}
+
+@container (max-width: 130px) {
+  .tp-cell-text {
+    display: none;
+  }
 }
 
 .ffl-board__pic--initials{

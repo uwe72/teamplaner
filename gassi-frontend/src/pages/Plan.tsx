@@ -286,17 +286,6 @@ export default function Plan() {
     : isoNummer(zielWoche) < isoNummer(aktuelleIsoWocheJetzt()) ? 'vergangen' : 'zukünftig'
   const wocheBadgeVariant = istAktuelleWoche ? 'success' : wocheTitel === 'vergangen' ? 'muted' : 'soft'
 
-  const freieRunden = planAbfrage.data
-    ? planAbfrage.data.tage.reduce(
-        (summe, datum) =>
-          summe +
-          planAbfrage.data!.gruppen.flatMap(g => g.zeilen)
-            .filter(zeile => !(zeile.zuteilungen.some(z => z.datum === datum && z.mitgliedId != null)))
-            .length,
-        0,
-      )
-    : 0
-
   const mobilerRasterAktionen: SlotCellAktionen | null = planAbfrage.data
     ? {
         eigeneId,
@@ -375,13 +364,15 @@ export default function Plan() {
             <>
               <WeekBar
                 woche={zielWoche}
-                istAktuelleWoche={istAktuelleWoche}
-                freieRunden={freieRunden}
                 onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
                 onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
-                onHeute={() => setFokus(null)}
+                onStatistik={() => {
+                  const ziel = new URLSearchParams()
+                  if (bereichId != null) ziel.set('bereich', String(bereichId))
+                  navigate(`/statistik${ziel.size > 0 ? `?${ziel.toString()}` : ''}`)
+                }}
               />
-              <PeopleProgress mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} />
+              <PeopleProgress mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} bereichId={bereichId} />
               <WeekRaster
                 plan={planAbfrage.data}
                 spalten={mobilerSpalten(planAbfrage.data)}

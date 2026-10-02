@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import type { PlanDto } from '../../types'
 import { heutigesDatum } from '../../utils/datum'
+import { eindeutigeInitialen } from '../../utils/kuerzel'
 import DayPill from './DayPill'
 import SlotCell, { type SlotCellAktionen } from './SlotCell'
 
@@ -21,6 +23,10 @@ export default function WeekRaster({
   extraScroll?: boolean
 }) {
   const heute = heutigesDatum()
+  const kuerzel = useMemo(
+    () => eindeutigeInitialen(plan.mitglieder.map(m => m.anzeigename)),
+    [plan.mitglieder],
+  )
   const template = `46px repeat(${spalten.length}, 1fr)`
 
   return (
@@ -52,6 +58,7 @@ export default function WeekRaster({
                 datum={datum}
                 plan={plan}
                 spalte={spalte}
+                kuerzel={kuerzel}
                 aktionen={aktionen}
               />
             ))}
@@ -66,11 +73,13 @@ function ZellenSlot({
   datum,
   plan,
   spalte,
+  kuerzel,
   aktionen,
 }: {
   datum: string
   plan: PlanDto
   spalte: ZeitfensterZellInfo
+  kuerzel: Map<string, string>
   aktionen: SlotCellAktionen
 }) {
   const gruppe = plan.gruppen.find(g => g.zeitfensterId === spalte.zeitfensterId)
@@ -85,6 +94,7 @@ function ZellenSlot({
         aufgabeId={spalte.aufgabeId}
         zeilenZuteilungen={[zeile.zuteilungen.find(z => z.datum === datum) ?? { id: null, aufgabeId: spalte.aufgabeId, mitgliedId: null, anzeigename: null, datum }]}
         mitglieder={plan.mitglieder}
+        kuerzelMap={kuerzel}
         cellKey={`box-${spalte.aufgabeId}-${datum}`}
         aktionen={aktionen}
       />
@@ -100,6 +110,7 @@ function ZellenSlot({
         zeile.zuteilungen.find(z => z.datum === datum) ?? { id: null, aufgabeId: zeile.aufgabe.id, mitgliedId: null, anzeigename: null, datum },
       )}
       mitglieder={plan.mitglieder}
+      kuerzelMap={kuerzel}
       cellKey={`slot-${spalte.zeitfensterId}-${datum}`}
       aktionen={aktionen}
     />

@@ -75,6 +75,15 @@ export function isoNummer(woche: IsoWoche): number {
   return woche.isoJahr * 100 + woche.isoWoche
 }
 
+export function wochenRelativLabel(woche: IsoWoche): string {
+  const diff = isoNummer(woche) - isoNummer(aktuelleIsoWocheJetzt())
+  if (diff === 0) return 'Diese Woche'
+  if (diff === 1) return 'Nächste Woche'
+  if (diff === -1) return 'Letzte Woche'
+  if (diff > 1) return `In ${diff} Wochen`
+  return `Vor ${Math.abs(diff)} Wochen`
+}
+
 export function heutigesDatum(): string {
   const jetzt = new Date()
   const y = jetzt.getFullYear()

@@ -1,20 +1,17 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { wochenbereichBis, type IsoWoche } from '../../utils/datum'
+import { wochenbereichBis, wochenRelativLabel, type IsoWoche } from '../../utils/datum'
+import BalkenDiagramm from './BalkenDiagramm'
 
 export default function WeekBar({
   woche,
-  istAktuelleWoche,
-  freieRunden,
   onVorherige,
   onNaechste,
-  onHeute,
+  onStatistik,
 }: {
   woche: IsoWoche
-  istAktuelleWoche: boolean
-  freieRunden: number
   onVorherige: () => void
   onNaechste: () => void
-  onHeute: () => void
+  onStatistik: () => void
 }) {
   return (
     <div
@@ -32,38 +29,29 @@ export default function WeekBar({
       </button>
 
       <div className="flex-1 flex flex-col items-center justify-center leading-tight min-w-0">
-        <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--tp-ink)' }}>KW {woche.isoWoche}</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--tp-muted)' }}>
+        <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--tp-ink)' }}>
           {wochenbereichBis(woche)}
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--tp-muted)' }}>
+          {wochenRelativLabel(woche)}
         </span>
       </div>
 
-      {freieRunden > 0 ? (
-        <span
-          className="inline-flex items-center px-3 h-7 rounded-full shrink-0 whitespace-nowrap"
-          style={{ backgroundColor: 'var(--tp-free-bg)', color: 'var(--tp-free)', fontSize: 13, fontWeight: 800 }}
-        >
-          {freieRunden} frei
-        </span>
-      ) : (
-        <span
-          className="inline-flex items-center px-3 h-7 rounded-full shrink-0 whitespace-nowrap"
-          style={{ backgroundColor: 'var(--tp-soft)', color: 'var(--tp-muted)', fontSize: 13, fontWeight: 800 }}
-        >
-          alles verteilt
-        </span>
-      )}
-
-      {!istAktuelleWoche && (
-        <button
-          type="button"
-          className="inline-flex items-center justify-center shrink-0 px-3 h-10 rounded-[12px] whitespace-nowrap"
-          style={{ backgroundColor: 'var(--tp-accent)', color: 'var(--tp-on-accent)', fontSize: 13, fontWeight: 800 }}
-          onClick={onHeute}
-        >
-          Heute
-        </button>
-      )}
+      <button
+        type="button"
+        className="rounded-full inline-flex items-center justify-center shrink-0 p-0"
+        style={{
+          width: 40,
+          height: 40,
+          backgroundColor: 'var(--tp-surface)',
+          border: '2px solid var(--tp-soft)',
+          color: 'var(--tp-ink)',
+        }}
+        aria-label="Statistik öffnen"
+        onClick={onStatistik}
+      >
+        <BalkenDiagramm farbe="var(--tp-accent)" groesse={18} />
+      </button>
 
       <button
         type="button"

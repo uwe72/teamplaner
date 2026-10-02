@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import type { MitgliedPlanInfo, Zuteilung } from '../../types'
 import { wochentagKurz } from '../../utils/datum'
+import { useAvatar } from '../../hooks/useAvatar'
 import RundAvatar from './RundAvatar'
 import Plus from './Plus'
 
@@ -19,6 +20,7 @@ interface SlotCellProps {
   aufgabeId: number | null
   zeilenZuteilungen: Zuteilung[]
   mitglieder: MitgliedPlanInfo[]
+  kuerzelMap: Map<string, string>
   cellKey: string
   aktionen: SlotCellAktionen
 }
@@ -29,6 +31,7 @@ export default function SlotCell({
   aufgabeId,
   zeilenZuteilungen,
   mitglieder,
+  kuerzelMap,
   cellKey,
   aktionen,
 }: SlotCellProps) {
@@ -52,6 +55,9 @@ export default function SlotCell({
 
   const wochentag = wochentagKurz(datum)
   const name = person?.anzeigename ?? zeilenZuteilungen[0]?.anzeigename ?? ''
+  const kuerzel = name ? kuerzelMap.get(name) : undefined
+  const { data: bildUrl } = useAvatar(person?.id ?? null, person?.avatarUrl ?? null)
+  const vorname = name.split(/\s+/)[0].slice(0, 8) + (name.split(/\s+/)[0].length > 8 ? '…' : '')
   const ariaLabel = istFrei
     ? `${wochentag}, Runde frei — antippen zum Übernehmen`
     : istEigene
@@ -74,7 +80,7 @@ export default function SlotCell({
     <button
       ref={setNodeRef}
       type="button"
-      className="flex items-center justify-center w-full h-full px-1 py-0.5"
+      className="tp-cell flex items-center justify-center w-full h-full px-1 py-0.5"
       style={{
         borderRadius: 'var(--tp-radius-cell)',
         backgroundColor: bg,
@@ -99,38 +105,62 @@ export default function SlotCell({
         </span>
       ) : (
         <span
-          className={`relative inline-flex items-center justify-center ${pop ?? ''}`}
-          style={{
-            height: 'min(88px, calc(100% - 1px))',
-            width: 'auto',
-            aspectRatio: '1 / 1',
-          }}
+          className={`flex items-center justify-center ${pop ?? ''}`}
+          style={{ gap: 10, height: 'min(88px, calc(100% - 1px))' }}
         >
-          <RundAvatar
-            mitgliedId={person?.id ?? null}
-            anzeigename={name}
-            avatarUrl={person?.avatarUrl ?? null}
-            groesse={60}
+          <span
+            className="relative inline-flex items-center justify-center"
             style={{
-              width: '100%',
-              height: '100%',
-              boxShadow: '0 0 0 3px #fff, var(--tp-shadow-avatar)',
+              height: '95%',
+              width: 'auto',
+              aspectRatio: '1 / 1',
             }}
-          />
-          {mehrere && teilweise && (
-            <span
-              className="absolute rounded-full tp-pulse"
+          >
+            <RundAvatar
+              mitgliedId={person?.id ?? null}
+              anzeigename={name}
+              avatarUrl={person?.avatarUrl ?? null}
+              groesse={60}
+              kuerzel={kuerzel}
               style={{
-                width: 20,
-                height: 20,
-                right: -4,
-                bottom: -2,
-                backgroundColor: 'var(--tp-free-bg)',
-                border: '2px dashed var(--tp-free-border)',
-                boxShadow: '0 0 0 2px #fff',
+                width: '100%',
+                height: '100%',
+                boxShadow: '0 0 0 3px #fff, var(--tp-shadow-avatar)',
               }}
-              aria-label="Runde teilweise frei"
             />
+            {mehrere && teilweise && (
+              <span
+                className="absolute rounded-full tp-pulse"
+                style={{
+                  width: 20,
+                  height: 20,
+                  right: -4,
+                  bottom: -2,
+                  backgroundColor: 'var(--tp-free-bg)',
+                  border: '2px dashed var(--tp-free-border)',
+                  boxShadow: '0 0 0 2px #fff',
+                }}
+                aria-label="Runde teilweise frei"
+              />
+            )}
+          </span>
+          {name !== '' && (
+            <span
+              aria-hidden="true"
+              className="tp-cell-text flex flex-col"
+              style={{ lineHeight: 1.05, alignItems: 'flex-start' }}
+            >
+              <span
+                style={{
+                  fontSize: 20,
+                  fontWeight: 900,
+                  color: 'var(--tp-ink)',
+                  letterSpacing: '.02em',
+                }}
+              >
+                {bildUrl ? kuerzel : vorname}
+              </span>
+            </span>
           )}
         </span>
       )}
