@@ -194,6 +194,26 @@ export default function Plan() {
     }
   }
 
+  async function freigebenMehrere(zuteilungen: Zuteilung[]) {
+    const list = zuteilungen.filter(z => z.id != null)
+    for (const zuteilung of list) {
+      const datum = zuteilung.datum
+      if (datum && zuteilung.mitgliedId != null) {
+        optimistischFreigeben(zuteilung.aufgabeId, datum, zuteilung.mitgliedId)
+      }
+    }
+    try {
+      await Promise.all(
+        list.map(zuteilung =>
+          api.delete(`/teams/${teamId}/zuteilungen/${zuteilung.id}`),
+        ),
+      )
+      nachErfolg()
+    } catch (e) {
+      nachFehler(e)
+    }
+  }
+
   function zuteilungDatumFuer(aufgabeId: number, zuteilungId: number): string | null {
     const alle = planAbfrage.data?.gruppen
       .flatMap(g => g.zeilen)
@@ -427,6 +447,7 @@ export default function Plan() {
             onZuweisen={(aufgabeId, mitgliedId) => zuweisen(aufgabeId, overlay.datum, mitgliedId)}
             onZuweisenAlle={(mitgliedId) => zeitfensterZuweisen(overlay.zeitfensterId, overlay.datum, mitgliedId)}
             onFreigeben={(zuteilungId) => freigeben(zuteilungId)}
+            onFreigebenAlle={(zuteilungen) => freigebenMehrere(zuteilungen)}
           />
         )
       })()}

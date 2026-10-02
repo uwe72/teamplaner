@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { MitgliedPlanInfo, ZeitfensterGruppe } from '../types'
+import type { MitgliedPlanInfo, ZeitfensterGruppe, Zuteilung } from '../types'
 import tagLabel from '../utils/datum'
 import Avatar from './Avatar'
 import Button from './Button'
@@ -14,6 +14,7 @@ export default function AufgabenZeilenOverlay({
   onZuweisen,
   onZuweisenAlle,
   onFreigeben,
+  onFreigebenAlle,
 }: {
   gruppe: ZeitfensterGruppe
   datum: string
@@ -24,6 +25,7 @@ export default function AufgabenZeilenOverlay({
   onZuweisen: (aufgabeId: number, mitgliedId: number) => void
   onZuweisenAlle: (mitgliedId: number) => void
   onFreigeben: (zuteilungId: number) => void
+  onFreigebenAlle: (zuteilungen: Zuteilung[]) => void
 }) {
   const eintraege = gruppe.zeilen.map(zeile => ({
     aufgabe: zeile.aufgabe,
@@ -41,7 +43,12 @@ export default function AufgabenZeilenOverlay({
   })
 
   const ersteZuteilung = eintraege[0]?.zuteilung ?? null
-  const belegterName = ersteZuteilung?.anzeigename ?? null
+  const zuteilungenDesTages = eintraege
+    .map(e => e.zuteilung)
+    .filter((z): z is Zuteilung => !!z?.id)
+  const alleGleich = eintraege.every(
+    e => (e.zuteilung?.mitgliedId ?? null) === (zuteilungenDesTages[0]?.mitgliedId ?? null),
+  )
 
   return (
     <div
@@ -52,15 +59,38 @@ export default function AufgabenZeilenOverlay({
         className="p-5 bg-card border border-border rounded-card shadow-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-[15px] font-medium text-foreground mb-1">
-          {gruppe.zeitfensterName} — {tagLabel(datum)}
-        </h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-[15px] font-medium text-foreground mb-1">
+            {gruppe.zeitfensterName} — {tagLabel(datum)}
+          </h3>
+          {erlaubt && zuteilungenDesTages.length > 0 && (
+            <button
+              type="button"
+              title={
+                zuteilungenDesTages.length > 1 && alleGleich
+                  ? `Alle ${zuteilungenDesTages.length} Aufgaben freigeben`
+                  : 'Zuteilung freigeben'
+              }
+              aria-label={
+                zuteilungenDesTages.length > 1 && alleGleich
+                  ? `Alle ${zuteilungenDesTages.length} Aufgaben freigeben`
+                  : 'Zuteilung freigeben'
+              }
+              className="inline-flex items-center justify-center w-6 h-6 rounded-badge border text-xs shrink-0 hover:bg-card-hover"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-danger)' }}
+              onClick={() => {
+                onFreigebenAlle(zuteilungenDesTages)
+                onClose()
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <p className="text-xs text-subtle mb-2">
           {getrennt
             ? 'Pro Aufgabe eine Person zuweisen — bestehende Zuteilungen werden überschrieben.'
-            : belegterName
-              ? `Belegt durch ${belegterName} — Auswahl überschreibt die bestehende Zuteilung.`
-              : `${eintraege.length} Aufgaben — Auswahl gilt für alle.`}
+            : `${eintraege.length} Aufgaben — Auswahl gilt für alle.`}
         </p>
         {!erlaubt && (
           <div className="p-2.5 mb-3 bg-warning-bg border border-warning/30 rounded-control text-[13px] text-warning">
