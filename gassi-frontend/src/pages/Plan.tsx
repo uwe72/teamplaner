@@ -350,7 +350,7 @@ export default function Plan() {
 
       <DndContext sensors={sensoren} onDragEnd={beimAblegen}>
       {isMobile ? (
-        <div className="flex-1 min-h-0 flex flex-col tp-safe" style={{ touchAction: 'pan-y' }}>
+        <div className="flex-1 min-h-0 flex flex-col tp-safe mx-auto w-full" style={{ touchAction: 'pan-y', maxWidth: 520 }}>
           {planAbfrage.data && mobilerRasterAktionen ? (
             <>
               <WeekBar

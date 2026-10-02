@@ -99,15 +99,22 @@ export default function SlotCell({
           <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--tp-free)' }}>frei</span>
         </span>
       ) : (
-        <span className={`relative inline-flex items-center justify-center ${pop ?? ''}`}>
+        <span
+          className={`relative inline-flex items-center justify-center ${pop ?? ''}`}
+          style={{
+            height: 'min(60px, calc(100% - 8px))',
+            width: 'auto',
+            aspectRatio: '1 / 1',
+          }}
+        >
           <RundAvatar
             mitgliedId={person?.id ?? null}
             anzeigename={name}
             avatarUrl={person?.avatarUrl ?? null}
             groesse={60}
             style={{
-              width: 'min(60px, calc(100% - 8px))',
-              height: 'min(60px, calc(100% - 8px))',
+              width: '100%',
+              height: '100%',
               boxShadow: '0 0 0 3px #fff, var(--tp-shadow-avatar)',
             }}
           />
