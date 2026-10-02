@@ -45,9 +45,8 @@ export default function SlotCell({
   const istHeute = datum === aktionen.heute
   const pop = cellKey === aktionen.popCellKey ? 'tp-pop' : undefined
 
-  let bg = 'var(--tp-surface)'
+  const bg = 'var(--tp-surface)'
   let border = '2px solid transparent'
-  if (!istFrei && istEigene) bg = 'var(--tp-mine)'
   if (istFrei) border = '2px dashed var(--tp-free-border)'
   else if (istHeute) border = '2px solid var(--tp-accent)'
 
