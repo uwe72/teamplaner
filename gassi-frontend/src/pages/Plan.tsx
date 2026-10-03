@@ -19,6 +19,7 @@ import StatistikChips from '../components/StatistikChips'
 import WeekBar from '../components/week/WeekBar'
 import PeopleProgress from '../components/week/PeopleProgress'
 import WeekRaster, { type ZeitfensterZellInfo } from '../components/week/WeekRaster'
+import StatistikPopup from '../components/week/StatistikPopup'
 import type { SlotCellAktionen } from '../components/week/SlotCell'
 import useHorizontalSwipe from '../hooks/useHorizontalSwipe'
 
@@ -41,6 +42,7 @@ export default function Plan() {
     | null
   >(null)
   const [popCellKey, setPopCellKey] = useState<string | null>(null)
+  const [statistikOffen, setStatistikOffen] = useState(false)
 
   const bereicheAbfrage = useBereiche()
 
@@ -366,13 +368,9 @@ export default function Plan() {
                 woche={zielWoche}
                 onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
                 onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
-                onStatistik={() => {
-                  const ziel = new URLSearchParams()
-                  if (bereichId != null) ziel.set('bereich', String(bereichId))
-                  navigate(`/statistik${ziel.size > 0 ? `?${ziel.toString()}` : ''}`)
-                }}
+                onStatistik={() => setStatistikOffen(true)}
               />
-              <PeopleProgress mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} bereichId={bereichId} />
+              <PeopleProgress mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} />
               <WeekRaster
                 plan={planAbfrage.data}
                 spalten={mobilerSpalten(planAbfrage.data)}
@@ -442,6 +440,14 @@ export default function Plan() {
           />
         )
       })()}
+
+      {statistikOffen && bereichId != null && planAbfrage.data && (
+        <StatistikPopup
+          bereichId={bereichId}
+          bereichName={bereichName}
+          onClose={() => setStatistikOffen(false)}
+        />
+      )}
 
       {isMobile ? null : <div className="h-10 md:hidden" />}
     </div>

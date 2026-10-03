@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import type { MitgliedPlanInfo } from '../../types'
 import { eindeutigeInitialen } from '../../utils/kuerzel'
 import { progressColor } from '../../utils/progress'
@@ -8,13 +7,10 @@ import RundAvatar from './RundAvatar'
 export default function PeopleProgress({
   mitglieder,
   eigeneId,
-  bereichId,
 }: {
   mitglieder: MitgliedPlanInfo[]
   eigeneId: number
-  bereichId: number | null
 }) {
-  const navigate = useNavigate()
   const sortiert = useMemo(() => [...mitglieder].sort((a, b) => {
     if (a.id === eigeneId) return -1
     if (b.id === eigeneId) return 1
@@ -26,30 +22,21 @@ export default function PeopleProgress({
     [sortiert],
   )
 
-  function statistikOeffnen(personId?: number) {
-    const ziel = new URLSearchParams()
-    if (bereichId != null) ziel.set('bereich', String(bereichId))
-    if (personId != null) ziel.set('person', String(personId))
-    navigate(`/statistik${ziel.size > 0 ? `?${ziel.toString()}` : ''}`)
-  }
-
   return (
     <div className="flex shrink-0" style={{ padding: '12px 18px 4px' }}>
       <div className="tp-scroll-x" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
-        <div className="flex gap-3.5">
+        <div className="flex gap-2.5">
           {sortiert.map(m => {
             const farbe = progressColor(m.ist, m.soll)
             const grad = farbe ? Math.min(m.ist / m.soll, 1) * 360 : 0
             const fertig = m.soll > 0 && m.ist >= m.soll
             const nichts = m.ist === 0 && m.soll > 0
             return (
-              <button
+              <div
                 key={m.id}
-                type="button"
-                className="flex flex-col items-center gap-[3px] shrink-0 p-0 bg-transparent border-0"
+                className="flex flex-col items-center gap-[3px] shrink-0"
                 style={{ minWidth: 50 }}
-                aria-label={`${m.anzeigename}: ${m.ist} von ${m.soll} erledigt`}
-                onClick={() => statistikOeffnen(m.id)}
+                title={`${m.anzeigename}: ${m.ist} von ${m.soll} erledigt`}
               >
                 <span className="relative" style={{ width: 50, height: 50 }}>
                   <span
@@ -101,7 +88,7 @@ export default function PeopleProgress({
                 >
                   {m.ist}/{m.soll}
                 </span>
-              </button>
+              </div>
             )
           })}
         </div>

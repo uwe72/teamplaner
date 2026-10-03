@@ -30,8 +30,12 @@ public class StatistikService {
     private final ZeitService zeitService;
 
     @Transactional(readOnly = true)
-    public StatistikDto statistik(Long teamId, Long bereichId, Integer isoJahr, Integer isoWoche) {
+    public StatistikDto statistik(Long teamId, Long bereichId, Integer isoJahr, Integer isoWoche,
+                                  Integer monatJahr, Integer monat) {
         zugriffsPruefer.pruefeZugriff(teamId);
+        if (monat != null && (monat < 1 || monat > 12)) {
+            throw new BusinessFehler("MONAT_UNGUELTIG", "Ungültiger Monat.");
+        }
         Bereich bereich = bereichRepository.findById(bereichId)
             .filter(b -> b.getTeam() != null && b.getTeam().getId().equals(teamId))
             .orElseThrow(() -> new BusinessFehler("BEREICH_UNBEKANNT", "Dieser Bereich existiert nicht."));
@@ -72,13 +76,22 @@ public class StatistikService {
             })
             .toList();
 
-        LocalDate ersterMonatstag = heute.withDayOfMonth(1);
-        LocalDate letzterMonatstag = heute.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
+        LocalDate ersterMonatstag;
+        LocalDate letzterMonatstag;
+        long tageMassgeblich;
+        java.time.YearMonth fokusMonat = monatJahr != null && monat != null
+            ? java.time.YearMonth.of(monatJahr, monat)
+            : java.time.YearMonth.from(heute);
+        ersterMonatstag = fokusMonat.atDay(1);
+        letzterMonatstag = fokusMonat.atEndOfMonth();
+        tageMassgeblich = fokusMonat.equals(java.time.YearMonth.from(heute))
+            ? heute.getDayOfMonth()
+            : fokusMonat.lengthOfMonth();
         long aufkommenProTag = Math.round(aufkommenProWoche / 7.0);
         List<StatistikDto.StatistikZeile> monatlich = mitglieder.stream()
             .map(m -> {
                 long ist = zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, ersterMonatstag, letzterMonatstag);
-                long moeglich = heute.getDayOfMonth() * aufkommenProTag;
+                long moeglich = tageMassgeblich * aufkommenProTag;
                 return zeile(m, ist, moeglich);
             })
             .toList();

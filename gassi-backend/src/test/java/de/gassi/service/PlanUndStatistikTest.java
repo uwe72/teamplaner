@@ -246,6 +246,48 @@ public class PlanUndStatistikTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void statistikMonatlichBrowsbarInVergangeneMonate() throws Exception {
+        aufbau();
+        LocalDate heute = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate vorMonatstag = heute.withDayOfMonth(1).minusDays(1);
+        java.time.YearMonth zielMonat = java.time.YearMonth.from(vorMonatstag);
+
+        Long zfw = zeitfensterAnlegen("Morgens");
+        Long taeglich = aufgabeAnlegen(zfw, "Gassi Blue");
+        mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, vorMonatstag, mitgliedId)))
+            .andExpect(status().isCreated());
+
+        MvcResult statistik = mvc.perform(get("/api/teams/%d/statistik".formatted(teamId))
+                .param("bereichId", String.valueOf(bereichId))
+                .param("jahr", String.valueOf(zielMonat.getYear()))
+                .param("monat", String.valueOf(zielMonat.getMonthValue()))
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andReturn();
+        JsonNode statistikJson = om.readTree(statistik.getResponse().getContentAsString());
+        JsonNode annaMonat = null;
+        for (JsonNode zeile : statistikJson.get("monatlich")) {
+            if (zeile.get("mitgliedId").asLong() == mitgliedId) {
+                annaMonat = zeile;
+            }
+        }
+        assertThat(annaMonat).isNotNull();
+        assertThat(annaMonat.get("ist").asLong()).isEqualTo(1);
+        assertThat(annaMonat.get("moeglich").asLong()).isEqualTo(zielMonat.lengthOfMonth());
+
+        mvc.perform(get("/api/teams/%d/statistik".formatted(teamId))
+                .param("bereichId", String.valueOf(bereichId))
+                .param("jahr", String.valueOf(zielMonat.getYear()))
+                .param("monat", "13")
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("MONAT_UNGUELTIG"));
+    }
+
+    @Test
     void planGruppiertAufgabenNachZeitfensterPrioritaet() throws Exception {
         aufbau();
         LocalDate heute = LocalDate.now(ZoneId.of("Europe/Berlin"));
