@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../api/client'
 import { aktivesTeamId } from '../api/client'
 import type { Teammitglied, Rolle } from '../types'
+import { MITGLIED_FARBPALETTE, mitgliedFarbe } from '../utils/farben'
 import { useAvatarFuerMitglied } from '../hooks/useAvatar'
 import Avatar from '../components/Avatar'
 import Button from '../components/Button'
@@ -12,7 +12,6 @@ import FormCard from '../components/FormCard'
 import CardContainer from '../components/CardContainer'
 import { TableContent, TableHead, TableBody, Th } from '../components/Table'
 import { Dialog } from '../components/Dialog'
-import Tabs from '../components/Tabs'
 import { antwort } from '../utils/fehler'
 import { BereichePanel } from './Bereiche'
 
@@ -27,8 +26,40 @@ const rolleChipClass: Record<string, string> = {
   MITGLIED: 'chip-warning',
 }
 
+function MitgliedCard({
+  mitglied,
+  onBearbeiten,
+}: {
+  mitglied: Teammitglied
+  onBearbeiten: () => void
+}) {
+  return (
+    <div className="p-4 bg-surface border border-border rounded-card">
+      <div className="flex gap-3 items-start">
+        <Avatar mitgliedId={mitglied.id} anzeigename={mitglied.anzeigename} avatarUrl={mitglied.avatarUrl} farbe={mitglied.farbe} groesse="xxl" />
+        <div className="flex-1 min-w-0">
+          <div className={`font-semibold truncate ${mitglied.aktiv ? 'text-foreground' : 'text-muted line-through'}`}>
+            {mitglied.anzeigename}
+          </div>
+          <div className="mt-0.5 text-xs text-muted truncate">
+            {mitglied.login} · {mitglied.email}
+          </div>
+          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+            {mitglied.rolle === 'MITGLIED'
+              ? <span className={`${rolleChipClass[mitglied.rolle]} text-xs font-medium px-2 py-0.5 rounded-badge`}>{rolleLabels[mitglied.rolle]}</span>
+              : <Badge variant="success">{rolleLabels[mitglied.rolle] ?? mitglied.rolle}</Badge>}
+            {mitglied.aktiv ? <Badge variant="success">aktiv</Badge> : <Badge variant="danger">inaktiv</Badge>}
+          </div>
+        </div>
+        <Button size="sm" variant="secondary" onClick={onBearbeiten}>
+          Bearbeiten
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const teamId = aktivesTeamId()
   const [fehler, setFehler] = useState<string | null>(null)
@@ -54,6 +85,7 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
     passwort: string
     anzeigename: string
     rolle: Rolle
+    farbe: string
   }) {
     setFehler(null)
     try {
@@ -69,6 +101,7 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
   async function mitgliedSpeichern(id: number, anfrage: {
     anzeigename: string
     email: string
+    farbe: string
     rolle: string
     aktiv: boolean
     passwort?: string
@@ -88,28 +121,10 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
     return <div className="card p-4 text-sm text-muted">Kein Team-Kontext.</div>
   }
 
-  function tabWechseln(key: string) {
-    setFehler(null)
-    setMeldung(null)
-    if (key === 'bereiche') {
-      navigate('/verwaltung/bereiche')
-    } else {
-      navigate('/verwaltung/teammitglieder')
-    }
-  }
-
   const mitglieder = mitgliederAbfrage.data ?? []
   const bearbeite = mitglieder.find(m => m.id === bearbeiteId) ?? null
   return (
     <div className="min-h-0">
-      <Tabs
-        items={[
-          { key: 'mitglieder', label: 'Teammitglieder' },
-          { key: 'bereiche', label: 'Bereiche' },
-        ]}
-        active={tab}
-        onChange={tabWechseln}
-      />
       {tab === 'mitglieder' ? (
         <>
         <CardContainer
@@ -127,55 +142,66 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
             <p className="text-success text-sm font-medium">{meldung}</p>
           </div>
         )}
-        <TableContent>
-          <table className="w-full">
-            <TableHead>
-              <tr>
-                <Th>Mitglied</Th>
-                <Th>Loginname</Th>
-                <Th>E-Mail</Th>
-                <Th>Rolle</Th>
-                <Th>Aktiv</Th>
-                <Th align="right">Aktionen</Th>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {mitglieder.length > 0 ? (
-                mitglieder.map((m, index) => (
-                  <tr key={m.id} className={`hover:bg-card-hover border-b border-border ${index % 2 === 1 ? 'bg-zebra' : ''}`}>
-                    <td className="px-2 py-2 md:px-3">
-                      <span className="flex items-center gap-2 font-medium">
-                        <Avatar mitgliedId={m.id} anzeigename={m.anzeigename} avatarUrl={m.avatarUrl} groesse="sm" />
-                        {m.anzeigename}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 md:px-3 font-mono text-xs">{m.login}</td>
-                    <td className="px-2 py-2 md:px-3 text-muted">{m.email}</td>
-                    <td className="px-2 py-2 md:px-3">
-                      {m.rolle === 'MITGLIED'
-                        ? <span className={`${rolleChipClass[m.rolle]} text-xs font-medium px-2 py-0.5 rounded-badge`}>{rolleLabels[m.rolle]}</span>
-                        : <Badge variant="success">{rolleLabels[m.rolle] ?? m.rolle}</Badge>}
-                    </td>
-                    <td className="px-2 py-2 md:px-3">
-                      {m.aktiv ? <Badge variant="success">aktiv</Badge> : <Badge variant="danger">inaktiv</Badge>}
-                    </td>
-                    <td className="px-2 py-2 md:px-3 text-right">
-                      <Button size="sm" variant="secondary" onClick={() => { setBearbeiteId(m.id); setNeuOffen(false); setMeldung(null) }}>
-                        Bearbeiten
-                      </Button>
+        <div className="hidden md:block">
+          <TableContent>
+            <table className="w-full">
+              <TableHead>
+                <tr>
+                  <Th>Mitglied</Th>
+                  <Th>Loginname</Th>
+                  <Th>E-Mail</Th>
+                  <Th>Rolle</Th>
+                  <Th>Aktiv</Th>
+                  <Th align="right">Aktionen</Th>
+                </tr>
+              </TableHead>
+              <TableBody>
+                {mitglieder.length > 0 ? (
+                  mitglieder.map((m, index) => (
+                    <tr key={m.id} className={`hover:bg-card-hover border-b border-border ${index % 2 === 1 ? 'bg-zebra' : ''}`}>
+                      <td className="px-2 py-2 md:px-3">
+                       <span className="flex items-center gap-2 font-medium">
+                         <Avatar mitgliedId={m.id} anzeigename={m.anzeigename} avatarUrl={m.avatarUrl} farbe={m.farbe} groesse="sm" />
+                         {m.anzeigename}
+                        </span>
+                      </td>
+                      <td className="px-2 py-2 md:px-3 font-mono text-xs">{m.login}</td>
+                      <td className="px-2 py-2 md:px-3 text-muted">{m.email}</td>
+                      <td className="px-2 py-2 md:px-3">
+                        {m.rolle === 'MITGLIED'
+                          ? <span className={`${rolleChipClass[m.rolle]} text-xs font-medium px-2 py-0.5 rounded-badge`}>{rolleLabels[m.rolle]}</span>
+                          : <Badge variant="success">{rolleLabels[m.rolle] ?? m.rolle}</Badge>}
+                      </td>
+                      <td className="px-2 py-2 md:px-3">
+                        {m.aktiv ? <Badge variant="success">aktiv</Badge> : <Badge variant="danger">inaktiv</Badge>}
+                      </td>
+                      <td className="px-2 py-2 md:px-3 text-right">
+                        <Button size="sm" variant="secondary" onClick={() => { setBearbeiteId(m.id); setNeuOffen(false); setMeldung(null) }}>
+                          Bearbeiten
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center text-subtle py-8">
+                      Keine Teammitglieder gefunden
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="text-center text-subtle py-8">
-                    Keine Teammitglieder gefunden
-                  </td>
-                </tr>
-              )}
-            </TableBody>
-          </table>
-        </TableContent>
+                )}
+              </TableBody>
+            </table>
+          </TableContent>
+        </div>
+        <div className="md:hidden grid gap-3 px-3 pt-4 pb-6">
+          {mitglieder.length > 0 ? (
+            mitglieder.map(m => <MitgliedCard key={m.id} mitglied={m} onBearbeiten={() => { setBearbeiteId(m.id); setNeuOffen(false); setMeldung(null) }} />)
+          ) : (
+            <div className="text-center text-subtle py-8">
+              Keine Teammitglieder gefunden
+            </div>
+          )}
+        </div>
       </CardContainer>
 
       {neuOffen && (
@@ -208,6 +234,24 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
   )
 }
 
+function Farbpalette({ wert, onWaehlen }: { wert: string; onWaehlen: (farbe: string) => void }) {
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {MITGLIED_FARBPALETTE.map(f => (
+        <button
+          key={f}
+          type="button"
+          onClick={() => onWaehlen(f)}
+          className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${wert === f ? 'ring-2 ring-offset-2 ring-accent-ring scale-110' : ''}`}
+          style={{ backgroundColor: f, borderColor: 'var(--color-border)' }}
+          aria-label={`Farbe ${f}`}
+          aria-pressed={wert === f}
+        />
+      ))}
+    </div>
+  )
+}
+
 function MitgliedBearbeiten({
   mitglied,
   onSpeichern,
@@ -215,13 +259,14 @@ function MitgliedBearbeiten({
   fehler,
 }: {
   mitglied: Teammitglied
-  onSpeichern: (anfrage: { anzeigename: string; email: string; rolle: string; aktiv: boolean }, passwort: string) => Promise<void>
+  onSpeichern: (anfrage: { anzeigename: string; email: string; farbe: string; rolle: string; aktiv: boolean }, passwort: string) => Promise<void>
   onAbbrechen: () => void
   fehler: string | null
 }) {
   const [entwurf, setEntwurf] = useState({
     anzeigename: mitglied.anzeigename,
     email: mitglied.email,
+    farbe: mitglied.farbe ?? mitgliedFarbe(0),
     rolle: mitglied.rolle,
     aktiv: mitglied.aktiv,
   })
@@ -330,6 +375,10 @@ function MitgliedBearbeiten({
             className="input-field w-full px-3 py-2 rounded-badge focus:outline-none"
           />
         </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm text-muted mb-2">Farbe</label>
+          <Farbpalette wert={entwurf.farbe} onWaehlen={farbe => setEntwurf(v => ({ ...v, farbe }))} />
+        </div>
         <div>
           <label className="block text-sm text-muted mb-1">Neues Passwort (optional)</label>
           <input
@@ -369,7 +418,7 @@ function MitgliedAnlegen({
   onAbbrechen,
   fehler,
 }: {
-  onAnlegen: (a: { login: string; email: string; passwort: string; anzeigename: string; rolle: Rolle }) => Promise<void>
+  onAnlegen: (a: { login: string; email: string; passwort: string; anzeigename: string; rolle: Rolle; farbe: string }) => Promise<void>
   onAbbrechen: () => void
   fehler: string | null
 }) {
@@ -378,6 +427,7 @@ function MitgliedAnlegen({
   const [email, setEmail] = useState('')
   const [passwort, setPasswort] = useState('')
   const [anzeigename, setAnzeigename] = useState('')
+  const [farbe, setFarbe] = useState(mitgliedFarbe(0))
   const [rolle, setRolle] = useState<Rolle>('MITGLIED')
   const [laedt, setLaedt] = useState(false)
 
@@ -445,12 +495,16 @@ function MitgliedAnlegen({
             <option value="ADMIN">Team-Admin</option>
           </select>
         </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm text-muted mb-2">Farbe</label>
+          <Farbpalette wert={farbe} onWaehlen={setFarbe} />
+        </div>
       </div>
       <div className="mt-6 flex gap-4">
         <Button variant="emphasized" disabled={!login.trim() || !email.trim() || !passwort || !anzeigename.trim() || laedt}
           onClick={async () => {
             setLaedt(true)
-            await onAnlegen({ login: login.trim(), email: email.trim(), passwort, anzeigename: anzeigename.trim(), rolle })
+            await onAnlegen({ login: login.trim(), email: email.trim(), passwort, anzeigename: anzeigename.trim(), rolle, farbe })
             setLaedt(false)
           }}>
           Anlegen

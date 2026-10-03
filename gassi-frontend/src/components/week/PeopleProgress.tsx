@@ -3,17 +3,20 @@ import type { MitgliedPlanInfo } from '../../types'
 import { eindeutigeInitialen } from '../../utils/kuerzel'
 import { progressColor } from '../../utils/progress'
 import RundAvatar from './RundAvatar'
+import { personFarbe } from '../../utils/farben'
 
 export default function PeopleProgress({
   mitglieder,
   eigeneId,
+  kumuliertProzent,
 }: {
   mitglieder: MitgliedPlanInfo[]
-  eigeneId: number
+  eigeneId?: number
+  kumuliertProzent?: Record<number, number>
 }) {
   const sortiert = useMemo(() => [...mitglieder].sort((a, b) => {
-    if (a.id === eigeneId) return -1
-    if (b.id === eigeneId) return 1
+    if (eigeneId != null && a.id === eigeneId) return -1
+    if (eigeneId != null && b.id === eigeneId) return 1
     return a.anzeigename.localeCompare(b.anzeigename)
   }), [mitglieder, eigeneId])
 
@@ -30,13 +33,16 @@ export default function PeopleProgress({
             const farbe = progressColor(m.ist, m.soll)
             const grad = farbe ? Math.min(m.ist / m.soll, 1) * 360 : 0
             const fertig = m.soll > 0 && m.ist >= m.soll
+            const kumuliert = kumuliertProzent?.[m.id]
             const nichts = m.ist === 0 && m.soll > 0
             return (
               <div
                 key={m.id}
                 className="flex flex-col items-center gap-[3px] shrink-0"
                 style={{ minWidth: 50 }}
-                title={`${m.anzeigename}: ${m.ist} von ${m.soll} erledigt`}
+                title={kumuliert != null
+                  ? `${m.anzeigename}: ${m.ist} von ${m.soll} erledigt, kumuliert ${kumuliert}%`
+                  : `${m.anzeigename}: ${m.ist} von ${m.soll} erledigt`}
               >
                 <span className="relative" style={{ width: 50, height: 50 }}>
                   <span
@@ -55,6 +61,7 @@ export default function PeopleProgress({
                       avatarUrl={m.avatarUrl}
                       groesse={40}
                       kuerzel={kuerzel.get(m.anzeigename)}
+                      farbe={personFarbe(m, mitglieder)}
                       style={{ boxShadow: '0 0 0 2px #fff' }}
                     />
                   </span>

@@ -4,6 +4,7 @@ import { wochentagKurz } from '../../utils/datum'
 import { useAvatar } from '../../hooks/useAvatar'
 import RundAvatar from './RundAvatar'
 import Plus from './Plus'
+import { personFarbe } from '../../utils/farben'
 
 export interface SlotCellAktionen {
   eigeneId: number
@@ -39,6 +40,11 @@ export default function SlotCell({
   const { setNodeRef, isOver } = useDroppable({ id: droppableId })
 
   const mehrere = zeilenZuteilungen.length > 1
+  const personen: MitgliedPlanInfo[] = []
+  for (const id of new Set(zeilenZuteilungen.filter(z => z.mitgliedId).map(z => z.mitgliedId))) {
+    const p = mitglieder.find(m => m.id === id)
+    if (p) personen.push(p)
+  }
   const person = zeilenZuteilungen[0]?.mitgliedId
     ? mitglieder.find(m => m.id === zeilenZuteilungen[0].mitgliedId) ?? null
     : null
@@ -97,11 +103,47 @@ export default function SlotCell({
         <span className="flex items-center gap-1.5 select-none">
           <span
             className="inline-flex items-center justify-center rounded-full shrink-0 tp-pulse"
-            style={{ width: 40, height: 40, backgroundColor: 'var(--tp-free-bg)' }}
+            style={{ width: 40, height: 40, backgroundColor: 'var(--tp-free-bg)', transform: 'scale(1.02)' }}
           >
             <Plus farbe="var(--tp-free)" groesse={22} />
           </span>
           <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--tp-free)' }}>frei</span>
+        </span>
+      ) : personen.length > 1 ? (
+        <span
+          className={`flex items-center justify-center ${pop ?? ''}`}
+          style={{ gap: 6, height: 'min(88px, calc(100% - 1px))' }}
+        >
+          {personen.map((p, idx) => {
+            const kreis = (
+              <PersonKreis
+                key={p.id}
+                person={p}
+                kuerzel={kuerzelMap.get(p.anzeigename)}
+                mitglieder={mitglieder}
+                groesse={44}
+              />
+            )
+            if (idx < personen.length - 1 || !teilweise) return kreis
+            return (
+              <span key={`tw-${p.id}`} className="relative inline-flex" style={{ height: 44 }}>
+                {kreis}
+                <span
+                  className="absolute rounded-full tp-pulse"
+                  style={{
+                    width: 18,
+                    height: 18,
+                    right: -3,
+                    bottom: 0,
+                    backgroundColor: 'var(--tp-free-bg)',
+                    border: '2px dashed var(--tp-free-border)',
+                    boxShadow: '0 0 0 2px #fff',
+                  }}
+                  aria-label="Runde teilweise frei"
+                />
+              </span>
+            )
+          })}
         </span>
       ) : (
         <span
@@ -122,6 +164,7 @@ export default function SlotCell({
               avatarUrl={person?.avatarUrl ?? null}
               groesse={60}
               kuerzel={kuerzel}
+              farbe={personFarbe(person, mitglieder)}
               style={{
                 width: '100%',
                 height: '100%',
@@ -165,5 +208,33 @@ export default function SlotCell({
         </span>
       )}
     </button>
+  )
+}
+
+function PersonKreis({
+  person,
+  kuerzel,
+  mitglieder,
+  groesse,
+}: {
+  person: MitgliedPlanInfo
+  kuerzel: string | undefined
+  mitglieder: MitgliedPlanInfo[]
+  groesse: number
+}) {
+  return (
+    <RundAvatar
+      mitgliedId={person.id}
+      anzeigename={person.anzeigename}
+      avatarUrl={person.avatarUrl ?? null}
+      groesse={groesse}
+      kuerzel={kuerzel}
+      farbe={personFarbe(person, mitglieder)}
+      style={{
+        width: groesse,
+        height: groesse,
+        boxShadow: '0 0 0 3px #fff, var(--tp-shadow-avatar)',
+      }}
+    />
   )
 }

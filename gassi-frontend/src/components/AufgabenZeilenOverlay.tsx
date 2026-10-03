@@ -3,6 +3,7 @@ import type { MitgliedPlanInfo, ZeitfensterGruppe, Zuteilung } from '../types'
 import tagLabel from '../utils/datum'
 import Avatar from './Avatar'
 import Button from './Button'
+import { personFarbe } from '../utils/farben'
 
 export default function AufgabenZeilenOverlay({
   gruppe,
@@ -148,6 +149,7 @@ export default function AufgabenZeilenOverlay({
                             mitgliedId={m.id}
                             anzeigename={m.anzeigename}
                             avatarUrl={m.avatarUrl}
+                            farbe={personFarbe(m, mitglieder)}
                             groesse="sm"
                           />
                           <span className="truncate">{m.anzeigename}</span>
@@ -178,6 +180,7 @@ export default function AufgabenZeilenOverlay({
                     mitgliedId={m.id}
                     anzeigename={m.anzeigename}
                     avatarUrl={m.avatarUrl}
+                    farbe={personFarbe(m, mitglieder)}
                     groesse="sm"
                   />
                   <span className="truncate">{m.anzeigename}</span>

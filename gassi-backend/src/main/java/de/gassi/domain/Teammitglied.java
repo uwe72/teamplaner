@@ -56,6 +56,9 @@ public class Teammitglied {
     @Builder.Default
     private boolean aktiv = true;
 
+    @Column(name = "farbe", length = 7)
+    private String farbe;
+
     @Column(name = "avatar", columnDefinition = "bytea")
     private byte[] avatar;
 

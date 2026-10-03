@@ -370,7 +370,12 @@ export default function Plan() {
                 onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
                 onStatistik={() => setStatistikOffen(true)}
               />
-              <PeopleProgress mitglieder={planAbfrage.data.mitglieder} eigeneId={eigeneId} />
+              <PeopleProgress
+                mitglieder={planAbfrage.data.mitglieder}
+                kumuliertProzent={Object.fromEntries(
+                  (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
+                )}
+              />
               <WeekRaster
                 plan={planAbfrage.data}
                 spalten={mobilerSpalten(planAbfrage.data)}
@@ -444,7 +449,6 @@ export default function Plan() {
       {statistikOffen && bereichId != null && planAbfrage.data && (
         <StatistikPopup
           bereichId={bereichId}
-          bereichName={bereichName}
           onClose={() => setStatistikOffen(false)}
         />
       )}

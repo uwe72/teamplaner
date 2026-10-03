@@ -24,6 +24,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final SpaForwardFilter spaForwardFilter = new SpaForwardFilter();
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -47,12 +48,15 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                 .requestMatchers("/", "/index.html", "/assets/**", "/*.js", "/*.css", "/*.png", "/*.jpg", "/*.svg",
                     "/*.ico", "/*.webmanifest", "/sw.js", "/manifest.webmanifest").permitAll()
-                .requestMatchers("/login", "/registrierung", "/passwort-vergessen", "/loginname-vergessen",
-                    "/passwort-zuruecksetzen", "/plan", "/bereiche", "/verwaltung", "/statistik", "/profil",
-                    "/super").permitAll()
+                .requestMatchers("/login", "/registrierung", "/registrierung/**", "/passwort-vergessen",
+                    "/loginname-vergessen", "/passwort-vergessen/**", "/passwort-zuruecksetzen",
+                    "/passwort-zuruecksetzen/**", "/plan", "/plan/**", "/bereiche", "/bereiche/**",
+                    "/verwaltung", "/verwaltung/**", "/statistik", "/statistik/**", "/profil",
+                    "/profil/**", "/super", "/super/**").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exception -> exception.authenticationEntryPoint(entryPoint))
+            .addFilterBefore(spaForwardFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 

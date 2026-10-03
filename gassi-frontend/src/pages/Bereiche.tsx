@@ -94,7 +94,7 @@ export function BereichePanel() {
 
       <CardContainer
         title="Bereiche"
-        subtitle="Ziehen, um die Reihenfolge der Tabs im Plan zu ändern."
+        subtitle="Jeder Bereich erscheint als eigener Eintrag im Plan-Menü der Sidebar."
         headerRight={
           <Button size="input" onClick={() => { setNeuOffen(true); setOffenId(null) }}>
             Bereich anlegen

@@ -269,6 +269,64 @@ public class VerwaltungsTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void mitgliedFarbeAnlegenAendernUndValidieren() throws Exception {
+        aufbau();
+        String login = eindeutig("mitglied");
+        MvcResult angelegt = mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\",\"farbe\":\"#0e7490\"}"
+                    .formatted(login, login)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.farbe").value("#0e7490"))
+            .andReturn();
+        Long id = om.readTree(angelegt.getResponse().getContentAsString()).get("id").asLong();
+
+        mvc.perform(put("/api/teams/%d/mitglieder/%d".formatted(teamId, id))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"anzeigename\":\"Anna\",\"email\":\"%s@example.de\",\"farbe\":\"#4338ca\"}"
+                    .formatted(login)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.farbe").value("#4338ca"));
+
+        mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"login\":\"%s2\",\"email\":\"%s2@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Bob\",\"farbe\":\"gelb\"}"
+                    .formatted(login, login)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void planEnthaeltFarbeProMitglied() throws Exception {
+        aufbau();
+        String login = eindeutig("mitglied");
+        mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Anna\",\"farbe\":\"#1d4ed8\"}"
+                    .formatted(login, login)))
+            .andExpect(status().isCreated());
+
+        MvcResult plan = mvc.perform(get("/api/teams/%d/plan".formatted(teamId))
+                .param("bereichId", bereichId.toString())
+                .param("isoJahr", "2026")
+                .param("isoWoche", "1")
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andReturn();
+        boolean gefunden = false;
+        for (JsonNode m : om.readTree(plan.getResponse().getContentAsString()).get("mitglieder")) {
+            if ("Anna".equals(m.get("anzeigename").asText())) {
+                gefunden = true;
+                assertThat(m.get("farbe").asText()).isEqualTo("#1d4ed8");
+            }
+        }
+        assertThat(gefunden).isTrue();
+    }
+
+    @Test
     void superAdminVerwaltetTeamsUndKonfiguration() throws Exception {
         aufbau();
 

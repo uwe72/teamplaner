@@ -13,6 +13,7 @@ export interface Teammitglied {
   login: string
   email: string
   anzeigename: string
+  farbe: string | null
   rolle: Rolle
   aktiv: boolean
   teamId: number | null
@@ -54,6 +55,7 @@ export interface Zuteilung {
 export interface MitgliedPlanInfo {
   id: number
   anzeigename: string
+  farbe: string | null
   soll: number
   ist: number
   sollUnterschritten: boolean

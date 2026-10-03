@@ -246,7 +246,7 @@ public class StammdatenService {
         zugriffsPruefer.pruefeZugriff(teamId);
         return teammitgliedRepository.findByTeamIdOrderByIdAsc(teamId).stream()
             .filter(m -> alle || m.isAktiv())
-            .map(m -> new MitgliedDto(m.getId(), m.getLogin(), m.getEmail(), m.getAnzeigename(),
+            .map(m -> new MitgliedDto(m.getId(), m.getLogin(), m.getEmail(), m.getAnzeigename(), m.getFarbe(),
                 m.getRolle().name(), m.isAktiv(),
                 m.getTeam() == null ? null : m.getTeam().getId(),
                 m.getTeam() == null ? null : m.getTeam().getName(),
@@ -279,6 +279,7 @@ public class StammdatenService {
             .email(anfrage.email().trim())
             .passwortHash(passwordEncoder.encode(anfrage.passwort()))
             .anzeigename(anfrage.anzeigename().trim())
+            .farbe(anfrage.farbe())
             .rolle(rolle)
             .aktiv(true)
             .build();
@@ -311,6 +312,9 @@ public class StammdatenService {
 
         mitglied.setAnzeigename(anfrage.anzeigename().trim());
         mitglied.setEmail(anfrage.email().trim());
+        if (anfrage.farbe() != null) {
+            mitglied.setFarbe(anfrage.farbe());
+        }
         if (anfrage.rolle() != null && !anfrage.rolle().isBlank()) {
             Rolle rolle = Rolle.valueOf(anfrage.rolle());
             if (rolle == Rolle.SUPER_ADMIN) {
@@ -377,7 +381,7 @@ public class StammdatenService {
     }
 
     private MitgliedDto zuMitgliedDto(Teammitglied m) {
-        return new MitgliedDto(m.getId(), m.getLogin(), m.getEmail(), m.getAnzeigename(),
+        return new MitgliedDto(m.getId(), m.getLogin(), m.getEmail(), m.getAnzeigename(), m.getFarbe(),
             m.getRolle().name(), m.isAktiv(),
             m.getTeam() == null ? null : m.getTeam().getId(),
             m.getTeam() == null ? null : m.getTeam().getName(),

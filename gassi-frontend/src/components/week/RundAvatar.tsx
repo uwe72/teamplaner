@@ -8,6 +8,7 @@ export default function RundAvatar({
   avatarUrl,
   groesse,
   kuerzel,
+  farbe,
   fallbackBg = 'var(--tp-photo)',
   fallbackTextFarbe = '#fff',
   fallbackTextGroesse = 24,
@@ -21,6 +22,7 @@ export default function RundAvatar({
   avatarUrl?: string | null
   groesse: number
   kuerzel?: string
+  farbe?: string | null
   fallbackBg?: string
   fallbackTextFarbe?: string
   fallbackTextGroesse?: number
@@ -32,6 +34,8 @@ export default function RundAvatar({
   const { data: bildUrl } = useAvatar(mitgliedId ?? null, avatarUrl ?? null)
   const text = kuerzel ?? initialen(anzeigename)
   const faktor = text.length <= 2 ? 1 : text.length === 3 ? 0.62 : text.length === 4 ? 0.5 : 0.42
+  const bg = farbe ?? fallbackBg
+  const textFarbe = farbe ? '#fff' : fallbackTextFarbe
 
   return (
     <span
@@ -39,8 +43,9 @@ export default function RundAvatar({
       style={{
         width: groesse,
         height: groesse,
-        backgroundColor: fallbackBg,
+        backgroundColor: bg,
         boxShadow: schatten ?? (ring ? `0 0 0 ${ring}` : undefined),
+        transform: 'scale(1.02)',
         ...style,
       }}
       title={anzeigename}
@@ -51,7 +56,7 @@ export default function RundAvatar({
         <span
           className="absolute inset-0 flex items-center justify-center"
           style={{
-            color: fallbackTextFarbe,
+            color: textFarbe,
             fontSize: Math.round(fallbackTextGroesse * faktor),
             fontWeight: 900,
           }}

@@ -102,7 +102,7 @@ public class PlanService {
                     .map(s -> s.getWert())
                     .orElse(0);
                 long ist = istProMitglied.getOrDefault(m.getId(), 0L);
-                return new PlanDto.MitgliedPlanInfo(m.getId(), m.getAnzeigename(), soll, ist,
+                return new PlanDto.MitgliedPlanInfo(m.getId(), m.getAnzeigename(), m.getFarbe(), soll, ist,
                     ist < soll, AvatarService.avatarUrlFuer(teamId, m.getId(),
                         m.getAvatar() != null && m.getAvatar().length > 0));
             })

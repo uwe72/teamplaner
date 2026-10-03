@@ -2,11 +2,9 @@ import StatistikInhalt from './StatistikInhalt'
 
 export default function StatistikPopup({
   bereichId,
-  bereichName,
   onClose,
 }: {
   bereichId: number
-  bereichName: string
   onClose: () => void
 }) {
   return (
@@ -15,10 +13,7 @@ export default function StatistikPopup({
         className="p-5 bg-card border border-border rounded-card shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <h3 className="text-[15px] font-medium text-foreground">
-            Statistik — {bereichName}
-          </h3>
+        <div className="flex items-start justify-end mb-3">
           <button
             type="button"
             title="Schließen"

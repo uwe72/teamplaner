@@ -5,6 +5,7 @@ public record MitgliedDto(
     String login,
     String email,
     String anzeigename,
+    String farbe,
     String rolle,
     boolean aktiv,
     Long teamId,

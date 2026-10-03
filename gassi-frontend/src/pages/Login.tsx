@@ -1,12 +1,18 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { login } from '../api/auth'
 import { sitzungSpeichern } from '../api/client'
+import { zielNachLogin } from '../utils/ziel'
 import type { AuthAntwort } from '../types'
 import Button from '../components/Button'
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const queryFrom = new URLSearchParams(window.location.search).get('from')
+  const locationState = queryFrom
+    ? { from: decodeURIComponent(queryFrom) }
+    : location.state
   const [loginname, setLoginname] = useState('')
   const [passwort, setPasswort] = useState('')
   const [fehler, setFehler] = useState('')
@@ -25,10 +31,8 @@ export default function Login() {
       sitzungSpeichern(antwort)
       if (antwort.teamOeffen) {
         navigate('/registrierung/team', { replace: true })
-      } else if (antwort.rolle === 'SUPER_ADMIN') {
-        navigate('/super', { replace: true })
       } else {
-        navigate('/plan', { replace: true })
+        navigate(zielNachLogin(locationState, antwort.rolle), { replace: true })
       }
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { code?: string } } }).response?.data?.code

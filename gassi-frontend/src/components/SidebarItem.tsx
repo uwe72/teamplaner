@@ -5,67 +5,11 @@ interface SidebarItemProps {
   label: string
   icon: string
   collapsed: boolean
-  subItems?: { to: string; label: string; icon?: string }[]
-  expanded?: boolean
-  onToggle?: () => void
 }
 
-export default function SidebarItem({ to, label, icon, collapsed, subItems, expanded, onToggle }: SidebarItemProps) {
+export default function SidebarItem({ to, label, icon, collapsed }: SidebarItemProps) {
   const location = useLocation()
-  const isActive =
-    location.pathname === to ||
-    (subItems
-      ? subItems.some((sub) => location.pathname === sub.to || location.pathname.startsWith(sub.to + '/'))
-      : to !== '/' && location.pathname.startsWith(to + '/'))
-  const hasSubItems = subItems && subItems.length > 0
-
-  if (hasSubItems) {
-    return (
-      <div>
-        <button
-          onClick={onToggle}
-          title={collapsed ? label : undefined}
-          className={`relative w-full flex items-center gap-3 px-3 h-[38px] rounded-control transition-colors
-            text-sidebar-muted font-medium hover:bg-sidebar-hover hover:text-sidebar-foreground
-            ${collapsed ? 'justify-center' : ''}`}
-        >
-          <i className={`sap-icon ${icon} text-[18px] shrink-0`} />
-          {!collapsed && (
-            <>
-              <span className="text-sm">{label}</span>
-              <svg
-                className={`ml-auto w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </>
-          )}
-        </button>
-        {!collapsed && expanded && (
-          <div className="ml-6 mt-1 flex flex-col gap-1">
-            {subItems.map((sub) => {
-              const subActive = location.pathname === sub.to
-              return (
-                <Link
-                  key={sub.to}
-                  to={sub.to}
-                  aria-current={subActive ? 'page' : undefined}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-control text-sm transition-colors
-                    ${subActive
-                      ? 'bg-sidebar-active-bg text-sidebar-active-text font-semibold'
-                      : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover'}`}
-                >
-                  {sub.icon && <i className={`sap-icon ${sub.icon} text-[14px] shrink-0 ${subActive ? 'text-accent' : ''}`} />}
-                  {sub.label}
-                </Link>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    )
-  }
+  const isActive = location.pathname === to || to !== '/' && location.pathname.startsWith(to + '/')
 
   return (
     <Link

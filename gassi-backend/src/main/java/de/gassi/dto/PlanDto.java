@@ -17,6 +17,7 @@ public record PlanDto(
     public record MitgliedPlanInfo(
         Long id,
         String anzeigename,
+        String farbe,
         int soll,
         long ist,
         boolean sollUnterschritten,

@@ -14,12 +14,14 @@ export default function Avatar({
   mitgliedId,
   anzeigename,
   avatarUrl,
+  farbe,
   groesse = 'md',
   className,
 }: {
   mitgliedId: number | null | undefined
   anzeigename: string
   avatarUrl?: string | null
+  farbe?: string | null
   groesse?: keyof typeof GROESSEN
   className?: string
 }) {
@@ -28,8 +30,13 @@ export default function Avatar({
 
   return (
     <span
-      className={`relative inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 font-semibold select-none bg-accent-muted text-accent ${className ?? GROESSEN[groesse]}`}
-      style={{ boxShadow: '0 0 0 1.5px var(--color-border-hover)' }}
+      className={`relative inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 font-semibold select-none ${bildUrl || !farbe ? 'bg-accent-muted text-accent' : 'text-white'} ${className ?? GROESSEN[groesse]}`}
+      style={{
+        boxShadow: bildUrl || !farbe
+          ? '0 0 0 1.5px var(--color-border-hover)'
+          : `0 0 0 1.5px ${farbe}`,
+        backgroundColor: bildUrl ? undefined : farbe ?? undefined,
+      }}
       title={anzeigename}
     >
       {bildUrl ? (

@@ -144,7 +144,9 @@ api.interceptors.response.use(
         return api.request(ursprung)
       }
       sitzungLoeschen()
-      window.location.href = '/login'
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = `/login?from=${encodeURIComponent(window.location.pathname)}`
+      }
     }
     return Promise.reject(error)
   }

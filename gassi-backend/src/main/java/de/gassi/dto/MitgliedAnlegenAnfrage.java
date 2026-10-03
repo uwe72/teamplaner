@@ -2,6 +2,7 @@ package de.gassi.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record MitgliedAnlegenAnfrage(
@@ -9,6 +10,7 @@ public record MitgliedAnlegenAnfrage(
     @NotBlank @Email String email,
     @NotBlank String passwort,
     @NotBlank String anzeigename,
+    @Pattern(regexp = "^#[0-9a-fA-F]{6}$") String farbe,
     String rolle
 ) {
 }

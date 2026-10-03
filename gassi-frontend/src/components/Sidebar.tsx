@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import SidebarItem from './SidebarItem'
 import { sitzungLaden, sitzungLoeschen } from '../api/client'
@@ -31,18 +31,6 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   const aktiveBereiche = (bereicheAbfrage.data ?? [])
     .filter(b => b.aktiv)
     .sort((a, b) => a.name.localeCompare(b.name, 'de'))
-  const [expandedMenu, setExpandedMenu] = useState<'plan' | 'verwaltung' | null>(null)
-
-  const isOnPlan = location.pathname.startsWith('/plan')
-  const isOnVerwaltung = location.pathname.startsWith('/verwaltung')
-  const effectivePlanExpanded = expandedMenu === 'plan'
-  const effectiveVerwaltungExpanded = expandedMenu === 'verwaltung'
-
-  useEffect(() => {
-    if (isOnPlan) setExpandedMenu('plan')
-    else if (isOnVerwaltung) setExpandedMenu('verwaltung')
-    else setExpandedMenu(null)
-  }, [location.pathname, isOnPlan, isOnVerwaltung])
 
   useEffect(() => {
     onCloseMobile()
@@ -60,33 +48,17 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
         {istSuper && (
           <SidebarItem to="/super" label="Übersicht" icon="sap-icon-manager" collapsed={collapsed} />
         )}
-        {hatTeam && aktiveBereiche.length > 1 && (
-          <SidebarItem
-            to="/plan"
-            label="Plan"
-            icon="sap-icon-calendar"
-            collapsed={collapsed}
-            subItems={aktiveBereiche.map(b => ({ to: `/plan/${b.id}`, label: b.name }))}
-            expanded={effectivePlanExpanded}
-            onToggle={() => setExpandedMenu(expandedMenu === 'plan' ? null : 'plan')}
-          />
-        )}
-        {hatTeam && aktiveBereiche.length <= 1 && (
+        {hatTeam && aktiveBereiche.length === 0 && (
           <SidebarItem to="/plan" label="Plan" icon="sap-icon-calendar" collapsed={collapsed} />
         )}
+        {hatTeam && aktiveBereiche.map(b => (
+          <SidebarItem key={b.id} to={`/plan/${b.id}`} label={b.name} icon="sap-icon-calendar" collapsed={collapsed} />
+        ))}
         {hatTeam && istAdmin && (
-          <SidebarItem
-            to="/verwaltung"
-            label="Verwaltung"
-            icon="sap-icon-locked"
-            collapsed={collapsed}
-            subItems={[
-              { to: '/verwaltung/bereiche', label: 'Bereiche', icon: 'sap-icon-grid' },
-              { to: '/verwaltung/teammitglieder', label: 'Teammitglieder', icon: 'sap-icon-employee' },
-            ]}
-            expanded={effectiveVerwaltungExpanded}
-            onToggle={() => setExpandedMenu(expandedMenu === 'verwaltung' ? null : 'verwaltung')}
-          />
+          <SidebarItem to="/verwaltung/bereiche" label="Bereiche" icon="sap-icon-grid" collapsed={collapsed} />
+        )}
+        {hatTeam && istAdmin && (
+          <SidebarItem to="/verwaltung/teammitglieder" label="Teammitglieder" icon="sap-icon-employee" collapsed={collapsed} />
         )}
         {hatTeam && (
           <SidebarItem to="/statistik" label="Statistik" icon="sap-icon-bar-chart" collapsed={collapsed} />

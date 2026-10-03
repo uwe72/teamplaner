@@ -3,6 +3,7 @@ import type { MitgliedPlanInfo, PlanDto, ZeitfensterGruppe } from '../types'
 import tagLabel from '../utils/datum'
 import type { ReactNode } from 'react'
 import Avatar from './Avatar'
+import { personFarbe, farbeHintergrund } from '../utils/farben'
 
 export interface RasterAktionen {
   eigeneId: number
@@ -149,7 +150,7 @@ function ZeitfensterSlot({
   const inhalt: ReactNode = chips.length > 0 || offen ? (
     <div className="flex flex-col gap-1 h-full">
       {chips.map(c => (
-        <SlotChip key={c.key} person={c.person} name={c.name} />
+        <SlotChip key={c.key} person={c.person} name={c.name} mitglieder={mitglieder} />
       ))}
       {offen && <OffenChip />}
     </div>
@@ -169,15 +170,21 @@ function ZeitfensterSlot({
   )
 }
 
-function SlotChip({ person, name }: { person: MitgliedPlanInfo | null; name: string }) {
+function SlotChip({ person, name, mitglieder }: { person: MitgliedPlanInfo | null; name: string; mitglieder: MitgliedPlanInfo[] }) {
+  const farbe = personFarbe(person, mitglieder)
   return (
     <div
-      className="flex items-center gap-2 w-full min-h-[40px] px-2.5 py-0 rounded-badge border border-border-hover bg-accent-soft text-[13px] leading-none"
+      className="flex items-center gap-2 w-full min-h-[40px] px-2.5 py-0 rounded-badge border text-[13px] leading-none"
+      style={{
+        backgroundColor: farbeHintergrund(farbe) ?? undefined,
+        borderColor: farbe ?? 'var(--color-border-hover)',
+      }}
     >
       <Avatar
         mitgliedId={person?.id ?? null}
         anzeigename={name}
         avatarUrl={person?.avatarUrl ?? null}
+        farbe={farbe}
         groesse="xxl"
       />
       <span className="font-medium truncate text-foreground" title={name}>
@@ -221,7 +228,7 @@ function ZellenBox({
     : null
 
   const inhalt: ReactNode = person ? (
-    <SlotChip person={person} name={person.anzeigename} />
+    <SlotChip person={person} name={person.anzeigename} mitglieder={mitglieder} />
   ) : (
     <OffenChip />
   )

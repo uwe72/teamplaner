@@ -7,6 +7,7 @@ import { aktivesTeamId } from '../../api/client'
 import type { Statistik } from '../../types'
 import { aktuelleIsoWocheJetzt, heutigesDatum, isoNummer, verschiebeIsoWoche, type IsoWoche } from '../../utils/datum'
 import { statistikFarbe } from '../../utils/farben'
+import { initialen } from '../../utils/initialen'
 import SegmentedTabs from '../SegmentedTabs'
 
 type Tab = 'woche' | 'monat' | 'komplett'
@@ -85,9 +86,9 @@ export default function StatistikInhalt({ bereichId }: { bereichId: number }) {
         <SegmentedTabs
           className="w-full"
           items={[
-            { key: 'woche', label: 'Woche' },
-            { key: 'monat', label: 'Monat' },
             { key: 'komplett', label: 'Komplett' },
+            { key: 'monat', label: 'Monat' },
+            { key: 'woche', label: 'Woche' },
           ]}
           active={tab}
           onChange={key => setTab(key as Tab)}
@@ -144,6 +145,34 @@ function TortenView({ zeilen, farbenMap, titel }: { zeilen: Statistik['wochenwei
     wert: z.ist,
     farbe: farbenMap.get(z.mitgliedId) ?? '#78716c',
   }))
+  const gesamt = daten.reduce((summe, d) => summe + d.wert, 0)
+
+  const label = ({ cx, cy, midAngle, outerRadius, payload }: {
+    cx?: number
+    cy?: number
+    midAngle?: number
+    outerRadius?: number
+    payload?: { name: string; wert: number }
+  }) => {
+    if (!payload || payload.wert / gesamt < 0.05) return null
+    const prozentzahl = Math.round((payload.wert / gesamt) * 100)
+    const rad = -(midAngle ?? 0) * (Math.PI / 180)
+    const x = (cx ?? 0) + ((outerRadius ?? 0) + 14) * Math.cos(rad)
+    const y = (cy ?? 0) + ((outerRadius ?? 0) + 14) * Math.sin(rad)
+    return (
+      <text
+        x={x}
+        y={y}
+        textAnchor={Math.cos(rad) >= 0 ? 'start' : 'end'}
+        dominantBaseline="central"
+        fontSize={11}
+        fontWeight={600}
+        fill="var(--color-foreground)"
+      >
+        {initialen(payload.name)} ({prozentzahl}%)
+      </text>
+    )
+  }
 
   return (
     <div className="py-3 grid gap-6">
@@ -154,7 +183,7 @@ function TortenView({ zeilen, farbenMap, titel }: { zeilen: Statistik['wochenwei
         {daten.length === 0 ? (
           <p className="text-sm text-muted py-6">Noch keine Zuteilungen in diesem Zeitraum.</p>
         ) : (
-          <div className="h-[220px]">
+          <div className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -162,9 +191,11 @@ function TortenView({ zeilen, farbenMap, titel }: { zeilen: Statistik['wochenwei
                   dataKey="wert"
                   nameKey="name"
                   innerRadius="45%"
-                  outerRadius="80%"
+                  outerRadius="65%"
                   paddingAngle={2}
                   stroke="var(--color-border)"
+                  label={label}
+                  labelLine={false}
                 >
                   {daten.map((eintrag, index) => (
                     <Cell key={index} fill={eintrag.farbe} />

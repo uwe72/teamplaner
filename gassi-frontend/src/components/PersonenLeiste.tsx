@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core'
 import type { MitgliedPlanInfo } from '../types'
 import Avatar from './Avatar'
+import { personFarbe } from '../utils/farben'
 
 export default function PersonenLeiste({
   mitglieder,
@@ -27,32 +28,35 @@ export default function PersonenLeiste({
         </p>
       )}
       <div className={kompakt ? 'flex gap-1.5 flex-nowrap overflow-x-auto' : 'flex gap-3 flex-wrap'}>
-        {sortiert.map(m => <PersonChip key={m.id} m={m} kompakt={kompakt} />)}
+        {sortiert.map(m => <PersonChip key={m.id} m={m} mitglieder={mitglieder} kompakt={kompakt} />)}
       </div>
     </div>
   )
 }
 
-function PersonChip({ m, kompakt }: { m: MitgliedPlanInfo; kompakt: boolean }) {
+function PersonChip({ m, mitglieder, kompakt }: { m: MitgliedPlanInfo; mitglieder: MitgliedPlanInfo[]; kompakt: boolean }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `karte-${m.id}` })
+  const farbe = personFarbe(m, mitglieder)
   return (
     <button
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`inline-flex items-center text-xs font-medium whitespace-nowrap rounded-badge border border-border-hover bg-surface transition-colors ${kompakt ? 'gap-1.5 h-7 px-2 shrink-0' : 'gap-2 h-6 px-2.5'}`}
+      className={`inline-flex items-center text-xs font-medium whitespace-nowrap rounded-badge border bg-surface transition-colors ${kompakt ? 'gap-1.5 h-7 px-2 shrink-0' : 'gap-2 h-6 px-2.5'}`}
       style={{
         transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
         zIndex: isDragging ? 50 : undefined,
         position: 'relative',
         touchAction: 'none',
         userSelect: 'none',
+        borderColor: farbe ?? 'var(--color-border-hover)',
       }}
     >
       <Avatar
         mitgliedId={m.id}
         anzeigename={m.anzeigename}
         avatarUrl={m.avatarUrl}
+        farbe={farbe}
         groesse="xs"
       />
       {m.anzeigename}
