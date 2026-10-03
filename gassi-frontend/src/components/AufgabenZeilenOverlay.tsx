@@ -1,15 +1,44 @@
 import { useState } from 'react'
 import type { MitgliedPlanInfo, ZeitfensterGruppe, Zuteilung } from '../types'
 import tagLabel from '../utils/datum'
+import { sortiereMitglieder } from '../utils/mitgliederSortierung'
 import Avatar from './Avatar'
 import Button from './Button'
 import { personFarbe } from '../utils/farben'
+
+function ZuteilungsChip({
+  name,
+  titel,
+  onFreigeben,
+}: {
+  name: string
+  titel: string
+  onFreigeben: () => void
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 pl-2 pr-1 h-6 rounded-badge border border-border bg-accent-soft text-foreground text-xs font-medium max-w-[180px]">
+      <span className="truncate" title={name}>{name}</span>
+      <button
+        type="button"
+        title={titel}
+        aria-label={titel}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0 hover:bg-card-hover"
+        style={{ color: 'var(--color-danger)' }}
+        onClick={onFreigeben}
+      >
+        ✕
+      </button>
+    </span>
+  )
+}
+
+const aufgabenFreigebenTitel = (anzahl: number) =>
+  anzahl > 1 ? `Alle ${anzahl} Aufgaben freigeben` : 'Zuteilung freigeben'
 
 export default function AufgabenZeilenOverlay({
   gruppe,
   datum,
   mitglieder,
-  eigeneId,
   erlaubt,
   onClose,
   onZuweisen,
@@ -20,7 +49,6 @@ export default function AufgabenZeilenOverlay({
   gruppe: ZeitfensterGruppe
   datum: string
   mitglieder: MitgliedPlanInfo[]
-  eigeneId: number
   erlaubt: boolean
   onClose: () => void
   onZuweisen: (aufgabeId: number, mitgliedId: number) => void
@@ -37,11 +65,7 @@ export default function AufgabenZeilenOverlay({
     return eintraege.some(e => (e.zuteilung?.mitgliedId ?? null) !== erste)
   })
 
-  const sortiert = [...mitglieder].sort((a, b) => {
-    if (a.id === eigeneId) return -1
-    if (b.id === eigeneId) return 1
-    return a.anzeigename.localeCompare(b.anzeigename)
-  })
+  const sortiert = sortiereMitglieder(mitglieder)
 
   const ersteZuteilung = eintraege[0]?.zuteilung ?? null
   const zuteilungenDesTages = eintraege
@@ -60,34 +84,9 @@ export default function AufgabenZeilenOverlay({
         className="p-5 bg-card border border-border rounded-card shadow-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-[15px] font-medium text-foreground mb-1">
-            {gruppe.zeitfensterName} — {tagLabel(datum)}
-          </h3>
-          {erlaubt && zuteilungenDesTages.length > 0 && (
-            <button
-              type="button"
-              title={
-                zuteilungenDesTages.length > 1 && alleGleich
-                  ? `Alle ${zuteilungenDesTages.length} Aufgaben freigeben`
-                  : 'Zuteilung freigeben'
-              }
-              aria-label={
-                zuteilungenDesTages.length > 1 && alleGleich
-                  ? `Alle ${zuteilungenDesTages.length} Aufgaben freigeben`
-                  : 'Zuteilung freigeben'
-              }
-              className="inline-flex items-center justify-center w-6 h-6 rounded-badge border text-xs shrink-0 hover:bg-card-hover"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-danger)' }}
-              onClick={() => {
-                onFreigebenAlle(zuteilungenDesTages)
-                onClose()
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
+        <h3 className="text-[15px] font-medium text-foreground mb-1">
+          {gruppe.zeitfensterName} — {tagLabel(datum)}
+        </h3>
         <p className="text-xs text-subtle mb-2">
           {getrennt
             ? 'Pro Aufgabe eine Person zuweisen — bestehende Zuteilungen werden überschrieben.'
@@ -112,26 +111,20 @@ export default function AufgabenZeilenOverlay({
                       {aufgabe.name}
                     </span>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {(person || zuteilung?.anzeigename) && (
+                      {(person || zuteilung?.anzeigename) && zuteilung?.id && erlaubt ? (
+                        <ZuteilungsChip
+                          name={zuteilung?.anzeigename ?? ''}
+                          titel="Zuteilung freigeben"
+                          onFreigeben={() => onFreigeben(zuteilung.id as number)}
+                        />
+                      ) : (person || zuteilung?.anzeigename) ? (
                         <span
                           className="inline-flex items-center px-2 h-6 rounded-badge border border-border-hover bg-accent-soft text-foreground text-xs font-medium max-w-[140px]"
                           title={zuteilung?.anzeigename ?? undefined}
                         >
                           <span className="truncate">{zuteilung?.anzeigename}</span>
                         </span>
-                      )}
-                      {zuteilung?.id && erlaubt && (
-                        <button
-                          type="button"
-                          title="Zuteilung freigeben"
-                          aria-label="Zuteilung freigeben"
-                          className="inline-flex items-center justify-center w-6 h-6 rounded-badge border text-xs shrink-0 hover:bg-card-hover"
-                          style={{ borderColor: 'var(--color-border)', color: 'var(--color-danger)' }}
-                          onClick={() => onFreigeben(zuteilung.id as number)}
-                        >
-                          ✕
-                        </button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 mt-2">
@@ -162,7 +155,20 @@ export default function AufgabenZeilenOverlay({
             })}
           </div>
         ) : (
-        <div className="grid grid-cols-2 gap-2 my-3">
+          <div className="flex flex-col gap-2 my-3">
+            {erlaubt && zuteilungenDesTages.length > 0 && alleGleich && (
+              <div className="flex items-center justify-end">
+                <ZuteilungsChip
+                  name={`${zuteilungenDesTages.length} Aufgaben — ${zuteilungenDesTages[0]?.anzeigename ?? ''}`}
+                  titel={aufgabenFreigebenTitel(zuteilungenDesTages.length)}
+                  onFreigeben={() => {
+                    onFreigebenAlle(zuteilungenDesTages)
+                    onClose()
+                  }}
+                />
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
             {sortiert.map(m => {
               const istBelegt = ersteZuteilung?.mitgliedId === m.id
               return (
@@ -187,6 +193,7 @@ export default function AufgabenZeilenOverlay({
                 </button>
               )
             })}
+            </div>
           </div>
         )}
 

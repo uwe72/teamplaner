@@ -174,6 +174,9 @@ function TortenView({ zeilen, farbenMap, titel }: { zeilen: Statistik['wochenwei
     )
   }
 
+  const sortierteZeilen = [...zeilen]
+    .sort((a, b) => b.prozent - a.prozent || b.ist - a.ist)
+
   return (
     <div className="py-3 grid gap-6">
       <div>
@@ -208,7 +211,7 @@ function TortenView({ zeilen, farbenMap, titel }: { zeilen: Statistik['wochenwei
         )}
       </div>
       <div className="space-y-2">
-        {zeilen.map(z => (
+        {sortierteZeilen.map(z => (
           <div key={z.mitgliedId} className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: farbenMap.get(z.mitgliedId) }} />
             <span className="text-sm flex-1 min-w-0 truncate">{z.anzeigename}</span>

@@ -1,24 +1,19 @@
 import { useDraggable } from '@dnd-kit/core'
 import type { MitgliedPlanInfo } from '../types'
+import { sortiereMitglieder } from '../utils/mitgliederSortierung'
 import Avatar from './Avatar'
 import { personFarbe } from '../utils/farben'
 
 export default function PersonenLeiste({
   mitglieder,
-  eigeneId,
   label = true,
   kompakt = false,
 }: {
   mitglieder: MitgliedPlanInfo[]
-  eigeneId: number
   label?: boolean
   kompakt?: boolean
 }) {
-  const sortiert = [...mitglieder].sort((a, b) => {
-    if (a.id === eigeneId) return -1
-    if (b.id === eigeneId) return 1
-    return a.anzeigename.localeCompare(b.anzeigename)
-  })
+  const sortiert = sortiereMitglieder(mitglieder)
 
   return (
     <div>

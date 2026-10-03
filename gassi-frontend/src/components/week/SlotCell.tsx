@@ -154,7 +154,7 @@ export default function SlotCell({
           <span
             className="relative inline-flex items-center justify-center shrink-0"
             style={{
-              height: 'min(60px, 95%)',
+              height: 'min(60px, calc(100% - 8px))',
               width: 'auto',
               aspectRatio: '1 / 1',
             }}

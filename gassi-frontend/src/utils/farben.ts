@@ -10,6 +10,7 @@ export function statistikFarbe(index: number): string {
 export const MITGLIED_FARBPALETTE = [
   '#b45309', '#c2410c', '#0e7490', '#0f766e', '#0369a1', '#1d4ed8',
   '#4338ca', '#6d28d9', '#7e22ce', '#a21caf', '#db2777', '#78716c',
+  '#292524', '#000000',
 ]
 
 export function mitgliedFarbe(index: number): string {

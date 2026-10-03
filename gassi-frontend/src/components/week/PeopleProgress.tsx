@@ -2,23 +2,18 @@ import { useMemo } from 'react'
 import type { MitgliedPlanInfo } from '../../types'
 import { eindeutigeInitialen } from '../../utils/kuerzel'
 import { progressColor } from '../../utils/progress'
+import { sortiereMitglieder } from '../../utils/mitgliederSortierung'
 import RundAvatar from './RundAvatar'
 import { personFarbe } from '../../utils/farben'
 
 export default function PeopleProgress({
   mitglieder,
-  eigeneId,
   kumuliertProzent,
 }: {
   mitglieder: MitgliedPlanInfo[]
-  eigeneId?: number
   kumuliertProzent?: Record<number, number>
 }) {
-  const sortiert = useMemo(() => [...mitglieder].sort((a, b) => {
-    if (eigeneId != null && a.id === eigeneId) return -1
-    if (eigeneId != null && b.id === eigeneId) return 1
-    return a.anzeigename.localeCompare(b.anzeigename)
-  }), [mitglieder, eigeneId])
+  const sortiert = useMemo(() => sortiereMitglieder(mitglieder), [mitglieder])
 
   const kuerzel = useMemo(
     () => eindeutigeInitialen(sortiert.map(m => m.anzeigename)),

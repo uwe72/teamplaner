@@ -435,7 +435,6 @@ export default function Plan() {
             gruppe={gruppe}
             datum={overlay.datum}
             mitglieder={planAbfrage.data.mitglieder}
-            eigeneId={eigeneId}
             erlaubt={overlay.datum >= heute || !!istAdmin}
             onClose={() => setOverlay(null)}
             onZuweisen={(aufgabeId, mitgliedId) => zuweisen(aufgabeId, overlay.datum, mitgliedId)}
