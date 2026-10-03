@@ -4,6 +4,7 @@ import Badge from './Badge'
 import { aktivesTeamName, sitzungLaden } from '../api/client'
 import useBereiche from '../hooks/useBereiche'
 import PlanWaehlerSheet from './week/PlanWaehler'
+import { vorname } from '../utils/vorname'
 
 interface HeroSectionProps {
   collapsed: boolean
@@ -19,7 +20,8 @@ function getGreeting(): string {
 
 export default function HeroSection({ collapsed, onMenuClick }: HeroSectionProps) {
   const teamName = aktivesTeamName()
-  const personName = sitzungLaden()?.person.anzeigename ?? 'Gast'
+  const personSitzung = sitzungLaden()?.person
+  const anzeigename = personSitzung?.anzeigename ?? 'Gast'
   const planMatch = useMatch('/plan/:bereichId')
   const bereicheAbfrage = useBereiche()
   const bereichName = planMatch
@@ -54,12 +56,12 @@ export default function HeroSection({ collapsed, onMenuClick }: HeroSectionProps
 
           <div className="flex flex-col justify-center min-w-0 hero-text-shadow">
             <p className="text-xl md:text-2xl font-bold text-foreground leading-tight pl-2.5">
-              {getGreeting()}, {personName}!
+              {getGreeting()}, {vorname(anzeigename)}!
             </p>
             {teamName && (
               <div className="flex items-center gap-2 mt-0.5 min-w-0">
                 <Badge variant="solid">{teamName}</Badge>
-                {bereichName && planMatch ? (
+                {bereichName && planMatch && (
                   <button
                     type="button"
                     className="md:hidden cursor-pointer"
@@ -68,9 +70,7 @@ export default function HeroSection({ collapsed, onMenuClick }: HeroSectionProps
                   >
                     <Badge variant="solid">{bereichName} ▾</Badge>
                   </button>
-                ) : bereichName ? (
-                  <span className="hidden md:block"><Badge variant="solid">{bereichName}</Badge></span>
-                ) : null}
+                )}
               </div>
             )}
           </div>

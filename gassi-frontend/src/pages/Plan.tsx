@@ -1,23 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { aktivesTeamId, aktivesTeamName, sitzungLaden } from '../api/client'
+import { aktivesTeamId, sitzungLaden } from '../api/client'
 import api from '../api/client'
 import type { FehlerAntwort, PlanDto, Statistik, Zuteilung } from '../types'
-import { aktuelleIsoWocheJetzt, heutigesDatum, isoNummer, verschiebeIsoWoche, wochenbereich, type IsoWoche } from '../utils/datum'
+import { aktuelleIsoWocheJetzt, heutigesDatum, verschiebeIsoWoche, type IsoWoche } from '../utils/datum'
 import { holeEigeneId } from '../utils/eigeneId'
 import useIsMobile from '../hooks/useIsMobile'
 import useBereiche from '../hooks/useBereiche'
-import PlanRaster from '../components/PlanRaster'
 import AufgabenZeilenOverlay from '../components/AufgabenZeilenOverlay'
-import CardContainer from '../components/CardContainer'
-import Button from '../components/Button'
-import Badge from '../components/Badge'
-import StatistikChips from '../components/StatistikChips'
 import WeekBar from '../components/week/WeekBar'
 import PeopleProgress from '../components/week/PeopleProgress'
+import DesktopRaster from '../components/week/DesktopRaster'
 import WeekRaster, { type ZeitfensterZellInfo } from '../components/week/WeekRaster'
 import StatistikPopup from '../components/week/StatistikPopup'
 import type { SlotCellAktionen } from '../components/week/SlotCell'
@@ -269,7 +264,6 @@ export default function Plan() {
     queryClient.invalidateQueries({ queryKey: ['statistik'] })
   }
 
-  const wocheLabel = useMemo(() => `KW ${zielWoche.isoWoche}/${zielWoche.isoJahr} (${wochenbereich(zielWoche)})`, [zielWoche])
   const swipeRef = useHorizontalSwipe(
     () => setFokus(verschiebeIsoWoche(zielWoche, 1)),
     () => setFokus(verschiebeIsoWoche(zielWoche, -1)),
@@ -282,11 +276,6 @@ export default function Plan() {
 
   const aktiveBereiche = (bereicheAbfrage.data ?? []).filter(b => b.aktiv)
   const bereichName = bereichId ? aktiveBereiche.find(b => b.id === bereichId)?.name ?? '' : ''
-  const istAktuelleWoche = isoNummer(zielWoche) === isoNummer(aktuelleIsoWocheJetzt())
-  const wocheTitel = istAktuelleWoche
-    ? 'aktuell'
-    : isoNummer(zielWoche) < isoNummer(aktuelleIsoWocheJetzt()) ? 'vergangen' : 'zukünftig'
-  const wocheBadgeVariant = istAktuelleWoche ? 'success' : wocheTitel === 'vergangen' ? 'muted' : 'soft'
 
   const mobilerRasterAktionen: SlotCellAktionen | null = planAbfrage.data
     ? {
@@ -324,34 +313,6 @@ export default function Plan() {
 
   return (
     <div ref={swipeRef} className="h-full flex flex-col min-h-0">
-      {!isMobile && aktivesTeamName() && (
-        <div className="card px-4 py-2.5 text-sm mb-4 flex flex-col gap-2 shrink-0" style={{ backgroundColor: 'var(--color-info-bg)' }}>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center min-w-0">
-              <span className="text-muted">Team: </span>
-              <span className="font-semibold">{aktivesTeamName()}</span>
-              <span className="ml-3 min-w-0">
-                <Badge variant="soft" bordered>{wocheLabel}</Badge>
-              </span>
-            </span>
-            <Badge variant={wocheBadgeVariant} bordered>{wocheTitel}</Badge>
-          </div>
-          {statistikAbfrage.data && wocheTitel !== 'zukünftig' && (
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted shrink-0">Statistik</span>
-              <div className="min-w-0">
-                <StatistikChips
-                  sollWerte={Object.fromEntries((planAbfrage.data?.mitglieder ?? []).map(m => [m.id, m.soll]))}
-                  wochenweise={statistikAbfrage.data.wochenweise}
-                  monatlich={statistikAbfrage.data.monatlich}
-                  kumuliert={statistikAbfrage.data.kumuliert}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {hinweis && (
         <div className="card p-3 text-sm mb-4 flex items-start justify-between shrink-0" style={{ backgroundColor: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>
           <span>{hinweis}</span>
@@ -387,42 +348,42 @@ export default function Plan() {
           )}
         </div>
       ) : (
-        <div className="flex-1 flex flex-col">
-          <CardContainer
-            className="flex-1"
-            title={`Wochenplan ${bereichName ? `— ${bereichName}` : ''}`}
-            headerRight={(
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, -1))} aria-label="Vorherige Woche">
-                  <ChevronLeft size={16} />
-                </Button>
-                <button
-                  className="text-xs text-muted hover:text-foreground underline underline-offset-2 disabled:opacity-50 disabled:no-underline"
-                  disabled={istAktuelleWoche}
-                  onClick={() => setFokus(null)}
-                >
-                  aktuelle Woche
-                </button>
-                <Button variant="secondary" size="compact" onClick={() => setFokus(verschiebeIsoWoche(zielWoche, 1))} aria-label="Nächste Woche">
-                  <ChevronRight size={16} />
-                </Button>
+        <div className="flex-1 min-h-0 flex flex-col">
+          {planAbfrage.data && mobilerRasterAktionen ? (
+            <>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--tp-ink)', lineHeight: 1.2 }}>
+                {bereichName}
+              </h1>
+              <div className="flex items-center justify-between flex-wrap" style={{ gap: 24 }}>
+                <div style={{ width: 460, maxWidth: '100%', marginTop: 4 }}>
+                  <WeekBar
+                    woche={zielWoche}
+                    onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
+                    onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
+                    zeigeStatistikButton={false}
+                  />
+                </div>
+                <PeopleProgress
+                  mitglieder={planAbfrage.data.mitglieder}
+                  kumuliertProzent={Object.fromEntries(
+                    (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
+                  )}
+                  ringGroesse={56}
+                  avatarGroesse={46}
+                  gap={18}
+                  padding="12px 0 0"
+                  zeigeVorname
+                  onPersonKlick={() => setStatistikOffen(true)}
+                />
               </div>
-            )}
-          >
-            {planAbfrage.isLoading || !planAbfrage.data ? (
-              <div className="text-center py-8 text-muted">{planAbfrage.isLoading ? 'Laden...' : 'Kein Plan — lege zuerst einen Bereich und Aufgaben an.'}</div>
-            ) : (
-              <PlanRaster
+              <DesktopRaster
                 plan={planAbfrage.data}
-                aktionen={{
-                  eigeneId,
-                  istAdmin: !!istAdmin,
-                  heute,
-                  onSlotKlick: (zeitfensterId, datum) => setOverlay({ zeitfensterId, datum }),
-                }}
+                aktionen={mobilerRasterAktionen}
               />
-            )}
-          </CardContainer>
+            </>
+          ) : (
+            <div className="text-center py-8 text-muted">{planAbfrage.isLoading ? 'Laden...' : 'Kein Plan — lege zuerst einen Bereich und Aufgaben an.'}</div>
+          )}
         </div>
       )}
       </DndContext>

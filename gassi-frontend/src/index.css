@@ -27,6 +27,13 @@
   --tp-radius-cell: 20px;
   --tp-radius-pill: 16px;
 
+  /* Sidebar (Desktop) */
+  --tp-sidebar: #221F1C;
+  --tp-sidebar-text: #E7E2DC;
+  --tp-sidebar-icon: #A39C95;
+  --tp-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --tp-sidebar-active-bg: #FFFFFF;
+
   /* Flaechen */
   --ffl-sidebar: #1c1917;
   --ffl-sidebar-hover: #292524;
@@ -182,14 +189,14 @@
 
   --color-header: var(--ffl-sidebar);
 
-  --color-sidebar: var(--ffl-sidebar);
-  --color-sidebar-foreground: var(--ffl-text-on-dark);
-  --color-sidebar-muted: var(--ffl-text-on-dark-muted);
-  --color-sidebar-hover: var(--ffl-sidebar-hover);
-  --color-sidebar-border: var(--ffl-sidebar-hover);
-  --color-sidebar-active-bg: var(--ffl-surface-sunken);
-  --color-sidebar-active-text: var(--ffl-text);
-  --color-sidebar-active: var(--ffl-text-on-accent);
+  --color-sidebar: var(--tp-sidebar);
+  --color-sidebar-foreground: var(--tp-sidebar-text);
+  --color-sidebar-muted: var(--tp-sidebar-icon);
+  --color-sidebar-hover: var(--tp-sidebar-hover);
+  --color-sidebar-border: var(--tp-sidebar-hover);
+  --color-sidebar-active-bg: var(--tp-sidebar-active-bg);
+  --color-sidebar-active-text: var(--tp-ink);
+  --color-sidebar-active: var(--color-accent);
   --color-sidebar-warning: #e0a53a;
 
   --color-goalkeeper: var(--ffl-pos-tw);
@@ -872,6 +879,38 @@ body {
 @container (max-width: 130px) {
   .tp-cell-text {
     display: none;
+  }
+}
+
+.tp-focus:focus-visible {
+  outline: 2px solid var(--tp-accent);
+  outline-offset: 2px;
+}
+
+.tp-heute-band {
+  border-radius: 20px;
+  background: rgba(59, 54, 49, 0.06);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tp-hover-lift {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+  .tp-hover-lift:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14) !important;
+  }
+  .tp-hover-frei:not(:disabled):hover {
+    background-color: rgba(255, 235, 194, 0.4) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-hover-lift {
+    transition: none;
+  }
+  .tp-hover-lift:not(:disabled):hover {
+    transform: none;
   }
 }
 

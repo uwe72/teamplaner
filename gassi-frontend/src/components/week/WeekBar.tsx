@@ -7,20 +7,24 @@ export default function WeekBar({
   onVorherige,
   onNaechste,
   onStatistik,
+  zeigeStatistikButton = true,
+  className = '',
 }: {
   woche: IsoWoche
   onVorherige: () => void
   onNaechste: () => void
-  onStatistik: () => void
+  onStatistik?: () => void
+  zeigeStatistikButton?: boolean
+  className?: string
 }) {
   return (
     <div
-      className="flex items-center gap-2 mx-4 mt-3 p-1.5 rounded-[18px] shrink-0"
+      className={`flex items-center gap-2 p-1.5 rounded-[18px] shrink-0 ${className}`}
       style={{ backgroundColor: 'var(--tp-surface)', boxShadow: 'var(--tp-shadow)' }}
     >
       <button
         type="button"
-        className="inline-flex items-center justify-center shrink-0"
+        className="inline-flex items-center justify-center shrink-0 tp-focus"
         style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'var(--tp-soft)', color: 'var(--tp-ink)' }}
         aria-label="Vorherige Woche"
         onClick={onVorherige}
@@ -37,25 +41,27 @@ export default function WeekBar({
         </span>
       </div>
 
-      <button
-        type="button"
-        className="rounded-full inline-flex items-center justify-center shrink-0 p-0"
-        style={{
-          width: 40,
-          height: 40,
-          backgroundColor: 'var(--tp-surface)',
-          border: '2px solid var(--tp-soft)',
-          color: 'var(--tp-ink)',
-        }}
-        aria-label="Statistik öffnen"
-        onClick={onStatistik}
-      >
-        <BalkenDiagramm farbe="var(--tp-accent)" groesse={18} />
-      </button>
+      {zeigeStatistikButton && onStatistik && (
+        <button
+          type="button"
+          className="rounded-full inline-flex items-center justify-center shrink-0 p-0 tp-focus"
+          style={{
+            width: 40,
+            height: 40,
+            backgroundColor: 'var(--tp-surface)',
+            border: '2px solid var(--tp-soft)',
+            color: 'var(--tp-ink)',
+          }}
+          aria-label="Statistik öffnen"
+          onClick={onStatistik}
+        >
+          <BalkenDiagramm farbe="var(--tp-accent)" groesse={18} />
+        </button>
+      )}
 
       <button
         type="button"
-        className="inline-flex items-center justify-center shrink-0"
+        className="inline-flex items-center justify-center shrink-0 tp-focus"
         style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'var(--tp-soft)', color: 'var(--tp-ink)' }}
         aria-label="Nächste Woche"
         onClick={onNaechste}

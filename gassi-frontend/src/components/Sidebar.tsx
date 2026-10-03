@@ -88,7 +88,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
               >
                 {person?.anzeigename?.charAt(0).toUpperCase() || 'U'}
               </div>
-              <Link to="/profil" className="text-sm text-primary truncate hover:text-accent hover:underline cursor-pointer">{person?.anzeigename ?? 'Gast'}</Link>
+              <Link to="/profil" className="text-sm text-sidebar-foreground truncate hover:text-sidebar-muted hover:underline cursor-pointer">{person?.anzeigename ?? 'Gast'}</Link>
             </div>
             <button
               onClick={handleLogout}
@@ -121,7 +121,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
     <>
       <aside
         className={`sidebar hidden md:flex flex-col bg-surface border-r border-border shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out`}
-        style={{ width: collapsed ? 64 : 240 }}
+        style={{ width: collapsed ? 72 : 240 }}
       >
         {renderSidebarContent()}
       </aside>

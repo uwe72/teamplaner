@@ -6,12 +6,18 @@ import { aktivesTeamId, aktivesTeamName } from '../api/client'
 
 const SIDEBAR_COLLAPSED_KEY = 'gassi-sidebar-collapsed'
 
+function sidebarStandardEingeklappt(): boolean {
+  return typeof window !== 'undefined' && window.innerWidth < 1200
+}
+
 export default function Layout({ istAdmin, istSuper }: { istAdmin: boolean; istSuper: boolean }) {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
-    return stored === 'true'
+    if (stored === 'true') return true
+    if (stored === 'false') return false
+    return sidebarStandardEingeklappt()
   })
   const [alsTeam, setAlsTeam] = useState<string | null>(null)
   const [hatTeam, setHatTeam] = useState(false)
@@ -20,6 +26,16 @@ export default function Layout({ istAdmin, istSuper }: { istAdmin: boolean; istS
     setAlsTeam(istSuper && aktivesTeamId() != null ? aktivesTeamName() : null)
     setHatTeam(aktivesTeamId() != null)
   }, [istSuper, mobileOpen])
+
+  useEffect(() => {
+    const onResize = () => {
+      if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) == null) {
+        setCollapsed(sidebarStandardEingeklappt())
+      }
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const handleToggleCollapse = (next: boolean) => {
     setCollapsed(next)
@@ -56,10 +72,10 @@ export default function Layout({ istAdmin, istSuper }: { istAdmin: boolean; istS
         />
 
         <main
-          className="flex-1 min-w-0 overflow-y-auto bg-page pt-0 md:pt-[30px] md:pb-6"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          className="flex-1 min-w-0 overflow-y-auto md:px-8 md:py-6"
+          style={{ background: 'var(--tp-ground)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <div className="w-full max-w-[1440px] px-0 md:px-[30px] h-full">
+          <div className="w-full max-w-[1480px] mx-auto h-full">
             <Outlet />
           </div>
         </main>
