@@ -27,7 +27,7 @@ export default function WeekRaster({
     () => eindeutigeInitialen(plan.mitglieder.map(m => m.anzeigename)),
     [plan.mitglieder],
   )
-  const template = `46px repeat(${spalten.length}, 1fr)`
+  const template = `46px repeat(${spalten.length}, minmax(0, 1fr))`
 
   return (
     <div className="flex-1 min-h-0 flex flex-col" style={{ padding: '8px 12px 14px', gap: 6 }}>

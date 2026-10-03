@@ -30,10 +30,9 @@ export default function HeroSection({ collapsed, onMenuClick }: HeroSectionProps
   return (
     <div className="hero relative h-[80px] md:h-[102px] shrink-0 overflow-hidden bg-header">
       <div
-        className="absolute inset-0 bg-cover bg-no-repeat"
+        className="hero-bg absolute inset-0 bg-cover bg-no-repeat"
         style={{
           backgroundImage: 'url(/hero-banner.jpg)',
-          backgroundPosition: 'center 10%',
           filter: 'brightness(1.35) contrast(0.92)',
         }}
       />

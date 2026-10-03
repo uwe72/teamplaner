@@ -34,7 +34,7 @@ export default function Layout({ istAdmin, istSuper }: { istAdmin: boolean; istS
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
+    <div className="flex flex-col h-dvh overflow-hidden bg-background">
       {istSuper && alsTeam && (
         <div className="relative z-40 bg-warning text-warning-foreground text-xs font-medium px-4 py-1.5 flex items-center justify-between"
           style={{ backgroundColor: 'var(--color-warning)', color: '#fff' }}>

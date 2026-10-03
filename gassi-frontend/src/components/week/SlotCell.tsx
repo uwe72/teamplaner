@@ -62,6 +62,7 @@ export default function SlotCell({
   const wochentag = wochentagKurz(datum)
   const name = person?.anzeigename ?? zeilenZuteilungen[0]?.anzeigename ?? ''
   const kuerzel = name ? kuerzelMap.get(name) : undefined
+  const farbe = personFarbe(person, mitglieder)
   const { data: bildUrl } = useAvatar(person?.id ?? null, person?.avatarUrl ?? null)
   const vorname = name.split(/\s+/)[0].slice(0, 8) + (name.split(/\s+/)[0].length > 8 ? '…' : '')
   const ariaLabel = istFrei
@@ -151,9 +152,9 @@ export default function SlotCell({
           style={{ gap: 10, height: 'min(88px, calc(100% - 1px))' }}
         >
           <span
-            className="relative inline-flex items-center justify-center"
+            className="relative inline-flex items-center justify-center shrink-0"
             style={{
-              height: '95%',
+              height: 'min(60px, 95%)',
               width: 'auto',
               aspectRatio: '1 / 1',
             }}
@@ -164,7 +165,7 @@ export default function SlotCell({
               avatarUrl={person?.avatarUrl ?? null}
               groesse={60}
               kuerzel={kuerzel}
-              farbe={personFarbe(person, mitglieder)}
+              farbe={farbe}
               style={{
                 width: '100%',
                 height: '100%',
@@ -191,13 +192,13 @@ export default function SlotCell({
             <span
               aria-hidden="true"
               className="tp-cell-text flex flex-col"
-              style={{ lineHeight: 1.05, alignItems: 'flex-start' }}
+              style={{ lineHeight: 1.05, alignItems: 'flex-start', minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
             >
               <span
                 style={{
                   fontSize: 20,
                   fontWeight: 900,
-                  color: 'var(--tp-ink)',
+                  color: farbe ?? 'var(--tp-ink)',
                   letterSpacing: '.02em',
                 }}
               >

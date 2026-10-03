@@ -19,7 +19,7 @@ const MONATSNAMEN = [
 
 export default function StatistikInhalt({ bereichId }: { bereichId: number }) {
   const teamId = aktivesTeamId()
-  const [tab, setTab] = useState<Tab>('woche')
+  const [tab, setTab] = useState<Tab>('komplett')
   const [fokusWoche, setFokusWoche] = useState<IsoWoche | null>(null)
   const [fokusMonat, setFokusMonat] = useState<{ jahr: number; monat: number } | null>(null)
 
