@@ -2,6 +2,7 @@ package de.gassi;
 
 import de.gassi.repository.AufgabeRepository;
 import de.gassi.repository.BereichRepository;
+import de.gassi.repository.BesuchLogRepository;
 import de.gassi.repository.PasswortResetTokenRepository;
 import de.gassi.repository.SollRepository;
 import de.gassi.repository.SystemConfigRepository;
@@ -46,6 +47,8 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     private BereichRepository bereichRepository;
     @Autowired
+    private BesuchLogRepository besuchLogRepository;
+    @Autowired
     private PasswortResetTokenRepository passwortResetTokenRepository;
     @Autowired
     private TeammitgliedRepository teammitgliedRepository;
@@ -67,6 +70,7 @@ public abstract class AbstractIntegrationTest {
         aufgabeRepository.deleteAll();
         zeitfensterRepository.deleteAll();
         bereichRepository.deleteAll();
+        besuchLogRepository.deleteAll();
         passwortResetTokenRepository.deleteAll();
         teammitgliedRepository.deleteAll();
         teamRepository.deleteAll();

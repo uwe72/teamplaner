@@ -68,7 +68,8 @@ npx tsc --noEmit
 - Login: loginname (global unique, case-insensitive, max 25, no `@`) + password, no team selection, generic error message, no password minimum. One login = one team; same email may exist in multiple teams with separate logins (FFL-style reset flows handle multipleAccounts)
 - Tenant isolation: every request carries the team context implicitly from the JWT; `/api/teams/{teamId}/...` validates membership server-side (SUPER_ADMIN passes); repository-level filtering; secured by backend tests
 - Deactivated members: no login, no assignment target, but remain in history/statistics
-- UI: FFL-analog — desktop (≥768px) sidebar + 7-column raster, mobile compact same raster; Bereich tabs horizontal above the plan; plan rows grouped under Zeitfenster header rows (priority order); assignment via drag & drop (Leiste → Zelle) plus click-Auswahl-Overlay; Soll-Badge (Ist/Soll, red when below) on member chips and assigned boxes
+- UI: FFL-analog — desktop (≥768px) sidebar + 7-column raster, mobile compact same raster; the plan page never shows a tabbed pane above the plan (exactly one Bereich/plan is displayed per route, Bereich selection lives in the sidebar); plan rows grouped under Zeitfenster header rows (priority order); assignment via drag & drop (Leiste → Zelle) plus click-Auswahl-Overlay; Soll-Badge (Ist/Soll, red when below) on member chips and assigned boxes
+- Tabbed panes always use the `/statistik`-page style: `src/components/Tabs.tsx` (underline style — `border-b border-border`, active `text-primary border-b-2 border-primary`); do not re-implement other tab/chip variants for page-level tab switching — reuse that component analog to `StatistikSeite.tsx`
 - All assignments live: renaming/Soll changes affect displayed history
 
 ## Versioning

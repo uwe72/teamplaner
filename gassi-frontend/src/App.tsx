@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
-import { useSitzung } from './api/client'
+import { useSitzung, besuchPingen } from './api/client'
 import Login from './pages/Login'
 import Registrierung from './pages/Registrierung'
 import TeamRegistrierung from './pages/TeamRegistrierung'
@@ -21,6 +21,18 @@ export default function App() {
   const person = sitzung?.person ?? null
   const istAdmin = person?.rolle === 'ADMIN' || person?.rolle === 'SUPER_ADMIN'
   const istSuper = person?.rolle === 'SUPER_ADMIN'
+
+  useEffect(() => {
+    if (!person) return
+    besuchPingen()
+    const handler = () => besuchPingen()
+    document.addEventListener('visibilitychange', handler)
+    window.addEventListener('focus', handler)
+    return () => {
+      document.removeEventListener('visibilitychange', handler)
+      window.removeEventListener('focus', handler)
+    }
+  }, [person])
 
   return (
     <BrowserRouter>

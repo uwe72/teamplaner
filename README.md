@@ -38,6 +38,39 @@ Erststart: Registrierungsseite öffnen — das erste Konto wird SUPER_ADMIN, dan
 
 GitHub Action baut auf jedem Push nach `main` ein Docker-Image (`ghcr.io/...:latest`), Tests laufen vorher. Domain bleibt `gassi.ipv64.de`. In Produktion `APP_JWT_SECRET` setzen (siehe `gassi-backend/.env.example`), sonst verfallen Tokens beim Neustart.
 
+## Home Assistant (nur lesend)
+
+Für die reine Anzeige auf einem Home-Assistant-Dashboard gibt es einen separaten Lese-Endpunkt, der NICHT am App-Login hängt:
+
+- `GET /api/ha/plan/{planId}` — `planId` ist die ID aus der Frontend-Route `/plan/{id}` (Bereich-ID). Liefert immer die aktuelle Woche (Montag–Sonntag, Europe/Berlin): Team, Bereich, Kalenderwoche, Zeitfenster („Slots"), Personen mit Ist/Soll (identisch zum Fortschrittsring in der Wochenansicht), Runden je Tag/Slot mit zugewiesenen Kürzeln sowie die Anzahl offener (freier) Runden ab heute bis Sonntag. Antwort als kompaktes JSON (< 8 KB).
+- `GET /api/ha/foto/{personId}?k={token}` — Profilfoto als Vorschaubild (max. 128×128, JPEG; nicht dekodierbare Formate werden unverändert ausgeliefert), `Cache-Control: max-age=86400`.
+
+Absicherung über die Umgebungsvariable `TEAMPLANER_HA_TOKEN`:
+
+- Plan-Endpunkt: Header `X-HA-Token: <token>`
+- Foto-Endpunkt: Query-Parameter `?k=<token>` (dieselbe Umgebungsvariable)
+- Falscher oder fehlender Token → `401`
+- Variable leer oder nicht gesetzt → Endpunkte deaktiviert (`404`)
+
+Beispiel für ein Docker-Compose-Snippet:
+
+```yaml
+services:
+  teamplaner:
+    image: ghcr.io/.../teamplaner-backend:latest
+    environment:
+      APP_JWT_SECRET: "<geheimer-jwt-schluessel>"
+      TEAMPLANER_HA_TOKEN: "<langer-zufaelliger-token>"
+```
+
+Beispiel-Abfrage:
+
+```bash
+curl -H "X-HA-Token: $TEAMPLANER_HA_TOKEN" https://gassi.ipv64.de/api/ha/plan/1
+```
+
+In Home Assistant z. B. als `rest`-Sensor oder `rest_image`-Entität einbinden (für Fotos den Token an die URL anhängen: `/api/ha/foto/3?k=...`).
+
 ## Domänenregeln
 
 Siehe `AGENTS.md`.

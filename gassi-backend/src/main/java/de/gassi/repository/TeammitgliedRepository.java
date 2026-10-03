@@ -20,6 +20,10 @@ public interface TeammitgliedRepository extends JpaRepository<Teammitglied, Long
 
     boolean existsByRolle(de.gassi.domain.Rolle rolle);
 
+    long countByTeamIdAndAktivTrue(Long teamId);
+
+    long countByAktivTrueAndTeamIsNotNull();
+
     @Query("SELECT m FROM Teammitglied m LEFT JOIN FETCH m.team WHERE m.id = :id")
     Optional<Teammitglied> findByIdMitTeam(@Param("id") Long id);
 }

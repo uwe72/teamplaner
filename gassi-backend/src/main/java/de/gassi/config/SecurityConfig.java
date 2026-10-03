@@ -45,6 +45,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ASYNC).permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/ha/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                 .requestMatchers("/", "/index.html", "/assets/**", "/*.js", "/*.css", "/*.png", "/*.jpg", "/*.svg",
                     "/*.ico", "/*.webmanifest", "/sw.js", "/manifest.webmanifest").permitAll()

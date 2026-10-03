@@ -1,23 +1,31 @@
 package de.gassi.controller;
 
+import de.gassi.domain.BesuchGranularitaet;
 import de.gassi.domain.Rolle;
+import de.gassi.dto.BesuchStatistikDto;
+import de.gassi.dto.BesuchTeamDto;
+import de.gassi.dto.BesuchZeitverlaufDto;
 import de.gassi.dto.SystemConfigDto;
 import de.gassi.dto.TeamAendernAnfrage;
 import de.gassi.dto.TeamDto;
 import de.gassi.exception.BusinessFehler;
 import de.gassi.repository.TeammitgliedRepository;
+import de.gassi.service.BesuchStatistikService;
 import de.gassi.service.KonfigurationsService;
 import de.gassi.service.ZeitService;
 import de.gassi.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -29,6 +37,7 @@ public class SuperController {
     private final TeamRepository teamRepository;
     private final TeammitgliedRepository teammitgliedRepository;
     private final KonfigurationsService konfigurationsService;
+    private final BesuchStatistikService besuchStatistikService;
 
     @GetMapping("/teams")
     public List<TeamDto> teams() {
@@ -64,6 +73,39 @@ public class SuperController {
     @GetMapping("/config")
     public SystemConfigDto config() {
         return new SystemConfigDto(konfigurationsService.alle());
+    }
+
+    @GetMapping("/besuche")
+    public BesuchStatistikDto besuchStatistik(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate von,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bis) {
+        if (!bis.isAfter(von)) {
+            throw new BusinessFehler("ZEITRAUM_UNGUELTIG", "Das Enddatum muss nach dem Startdatum liegen.");
+        }
+        return besuchStatistikService.statistikAlleTeams(von, bis);
+    }
+
+    @GetMapping("/besuche/zeitverlauf")
+    public BesuchZeitverlaufDto besuchZeitverlauf(@RequestParam String granularitaet) {
+        return besuchStatistikService.zeitverlaufAlleTeams(besuchGranularitaet(granularitaet));
+    }
+
+    @GetMapping("/besuche/teams")
+    public List<BesuchTeamDto> besucheJeTeam(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate von,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bis) {
+        if (!bis.isAfter(von)) {
+            throw new BusinessFehler("ZEITRAUM_UNGUELTIG", "Das Enddatum muss nach dem Startdatum liegen.");
+        }
+        return besuchStatistikService.besucheJeTeam(von, bis);
+    }
+
+    private BesuchGranularitaet besuchGranularitaet(String granularitaet) {
+        try {
+            return BesuchGranularitaet.valueOf(granularitaet);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessFehler("GRANULARITAET_UNGUELTIG", "Unbekannte Granularität.");
+        }
     }
 
     @PutMapping("/config")

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
@@ -13,8 +13,10 @@ import AufgabenZeilenOverlay from '../components/AufgabenZeilenOverlay'
 import WeekBar from '../components/week/WeekBar'
 import PeopleProgress from '../components/week/PeopleProgress'
 import DesktopRaster from '../components/week/DesktopRaster'
+import PlanContentCard from '../components/week/PlanContentCard'
 import WeekRaster, { type ZeitfensterZellInfo } from '../components/week/WeekRaster'
 import StatistikPopup from '../components/week/StatistikPopup'
+import StatistikInhalt from '../components/week/StatistikInhalt'
 import type { SlotCellAktionen } from '../components/week/SlotCell'
 import useHorizontalSwipe from '../hooks/useHorizontalSwipe'
 
@@ -38,6 +40,8 @@ export default function Plan() {
   >(null)
   const [popCellKey, setPopCellKey] = useState<string | null>(null)
   const [statistikOffen, setStatistikOffen] = useState(false)
+  const [statistikMonatReset, setStatistikMonatReset] = useState(0)
+  const statistikRef = useRef<HTMLDivElement | null>(null)
 
   const bereicheAbfrage = useBereiche()
 
@@ -274,14 +278,12 @@ export default function Plan() {
     return <div className="card p-4 text-sm text-muted">Kein Team-Kontext — bitte neu anmelden.</div>
   }
 
-  const aktiveBereiche = (bereicheAbfrage.data ?? []).filter(b => b.aktiv)
-  const bereichName = bereichId ? aktiveBereiche.find(b => b.id === bereichId)?.name ?? '' : ''
-
   const mobilerRasterAktionen: SlotCellAktionen | null = planAbfrage.data
     ? {
         eigeneId,
         heute,
         popCellKey,
+        istAdmin,
         onFreiKlick: (datum, zeitfensterId) => {
           if (datum < heute && !istAdmin) {
             setHinweis('Vergangene Tage dürfen nur von einem Admin geändert werden.')
@@ -330,6 +332,7 @@ export default function Plan() {
                 onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
                 onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
                 onStatistik={() => setStatistikOffen(true)}
+                className="mx-4 mt-3"
               />
               <PeopleProgress
                 mitglieder={planAbfrage.data.mitglieder}
@@ -348,38 +351,45 @@ export default function Plan() {
           )}
         </div>
       ) : (
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="pm-page flex flex-col gap-5" style={{ minHeight: '100%' }}>
           {planAbfrage.data && mobilerRasterAktionen ? (
             <>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--tp-ink)', lineHeight: 1.2 }}>
-                {bereichName}
-              </h1>
-              <div className="flex items-center justify-between flex-wrap" style={{ gap: 24 }}>
-                <div style={{ width: 460, maxWidth: '100%', marginTop: 4 }}>
-                  <WeekBar
-                    woche={zielWoche}
-                    onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
-                    onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
-                    zeigeStatistikButton={false}
-                  />
-                </div>
+              <PlanContentCard
+                woche={zielWoche}
+                onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
+                onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
+                onHeute={() => {
+                  setFokus(null)
+                  setStatistikMonatReset(z => z + 1)
+                }}
+                style={{ flexShrink: 0 }}
+              >
                 <PeopleProgress
                   mitglieder={planAbfrage.data.mitglieder}
-                  kumuliertProzent={Object.fromEntries(
-                    (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
-                  )}
+                  papier
                   ringGroesse={56}
-                  avatarGroesse={46}
-                  gap={18}
-                  padding="12px 0 0"
-                  zeigeVorname
-                  onPersonKlick={() => setStatistikOffen(true)}
+                  gap={24}
+                  verteilen
+                  onPersonKlick={() => statistikRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                />
+              </PlanContentCard>
+              <div className="pm-card" style={{ padding: 24, flexShrink: 0 }}>
+                <DesktopRaster
+                  plan={planAbfrage.data}
+                  aktionen={mobilerRasterAktionen}
+                  kompakt
                 />
               </div>
-              <DesktopRaster
-                plan={planAbfrage.data}
-                aktionen={mobilerRasterAktionen}
-              />
+              <div ref={statistikRef} className="pm-card" style={{ padding: 24, flexShrink: 0 }}>
+                {bereichId != null && (
+                  <StatistikInhalt
+                    bereichId={bereichId}
+                    nebeneinander
+                    woche={zielWoche}
+                    monatZuruecksetzenSignal={statistikMonatReset}
+                  />
+                )}
+              </div>
             </>
           ) : (
             <div className="text-center py-8 text-muted">{planAbfrage.isLoading ? 'Laden...' : 'Kein Plan — lege zuerst einen Bereich und Aufgaben an.'}</div>
@@ -406,7 +416,7 @@ export default function Plan() {
         )
       })()}
 
-      {statistikOffen && bereichId != null && planAbfrage.data && (
+      {isMobile && statistikOffen && bereichId != null && planAbfrage.data && (
         <StatistikPopup
           bereichId={bereichId}
           onClose={() => setStatistikOffen(false)}

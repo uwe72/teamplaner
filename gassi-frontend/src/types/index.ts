@@ -117,6 +117,46 @@ export interface Statistik {
   kumuliert: StatistikZeile[]
 }
 
+export interface BesuchMitglied {
+  mitgliedId: number
+  login: string
+  anzeigename: string
+  teamName: string | null
+  besuche: number
+}
+
+export interface BesuchMonat {
+  jahr: number
+  monat: number
+  besucheGesamt: number
+  mitglieder: BesuchMitglied[]
+}
+
+export interface BesuchStatistik {
+  monate: BesuchMonat[]
+}
+
+export type BesuchGranularitaet = 'TAG' | 'WOCHE' | 'MONAT' | 'QUARTAL' | 'JAHR'
+
+export interface BesuchBucket {
+  periodenStart: string
+  besuche: number
+  verschiedeneMitglieder: number
+}
+
+export interface BesuchZeitverlauf {
+  granularitaet: string
+  gesamtMitglieder: number
+  bucketListe: BesuchBucket[]
+}
+
+export interface BesuchTeam {
+  teamId: number
+  teamName: string
+  besuche: number
+  verschiedeneMitglieder: number
+}
+
 export interface AuthAntwort {
   token: string
   refreshToken: string

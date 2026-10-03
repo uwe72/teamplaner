@@ -150,6 +150,7 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
                   <Th>Mitglied</Th>
                   <Th>Loginname</Th>
                   <Th>E-Mail</Th>
+                  <Th>Farbe</Th>
                   <Th>Rolle</Th>
                   <Th>Aktiv</Th>
                   <Th align="right">Aktionen</Th>
@@ -168,6 +169,13 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
                       <td className="px-2 py-2 md:px-3 font-mono text-xs">{m.login}</td>
                       <td className="px-2 py-2 md:px-3 text-muted">{m.email}</td>
                       <td className="px-2 py-2 md:px-3">
+                        <span
+                          className="block w-4 h-4 rounded-full border"
+                          style={{ backgroundColor: m.farbe ?? mitgliedFarbe(0), borderColor: 'var(--color-border)' }}
+                          title={m.farbe ?? undefined}
+                        />
+                      </td>
+                      <td className="px-2 py-2 md:px-3">
                         {m.rolle === 'MITGLIED'
                           ? <span className={`${rolleChipClass[m.rolle]} text-xs font-medium px-2 py-0.5 rounded-badge`}>{rolleLabels[m.rolle]}</span>
                           : <Badge variant="success">{rolleLabels[m.rolle] ?? m.rolle}</Badge>}
@@ -184,7 +192,7 @@ export default function Verwaltung({ tab }: { tab: 'mitglieder' | 'bereiche' }) 
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center text-subtle py-8">
+                    <td colSpan={7} className="text-center text-subtle py-8">
                       Keine Teammitglieder gefunden
                     </td>
                   </tr>

@@ -6,6 +6,7 @@ import type { SystemKonfiguration, Team } from '../types'
 import Button from '../components/Button'
 import Badge from '../components/Badge'
 import CardContainer from '../components/CardContainer'
+import BesuchePanel from '../components/BesuchePanel'
 import { TableContent, TableHead, TableBody, Th } from '../components/Table'
 import { Dialog } from '../components/Dialog'
 import { antwort } from '../utils/fehler'
@@ -102,6 +103,8 @@ export default function Super() {
           </table>
         </TableContent>
       </CardContainer>
+
+      <BesuchePanel teamuebergreifend />
 
       <SystemKonfigurationKarte />
 

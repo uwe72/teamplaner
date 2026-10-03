@@ -1,13 +1,14 @@
 {
   "name": "gassi-frontend",
   "private": true,
-  "version": "1.0.20",
+  "version": "1.0.21",
   "type": "module",
   "scripts": {
     "predev": "npx -y kill-port 5173",
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -37,6 +38,7 @@
     "tailwindcss": "^4.2.2",
     "typescript": "~5.9.2",
     "vite": "^6.4.3",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^3.2.4"
   }
 }

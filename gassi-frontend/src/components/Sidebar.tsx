@@ -58,7 +58,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
           <SidebarItem to="/verwaltung/bereiche" label="Bereiche" icon="sap-icon-grid" collapsed={collapsed} />
         )}
         {hatTeam && istAdmin && (
-          <SidebarItem to="/verwaltung/teammitglieder" label="Teammitglieder" icon="sap-icon-employee" collapsed={collapsed} />
+          <SidebarItem to="/verwaltung/teammitglieder" label="Team" icon="sap-icon-employee" collapsed={collapsed} />
         )}
         {hatTeam && (
           <SidebarItem to="/statistik" label="Statistik" icon="sap-icon-bar-chart" collapsed={collapsed} />
@@ -121,7 +121,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
     <>
       <aside
         className={`sidebar hidden md:flex flex-col bg-surface border-r border-border shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out`}
-        style={{ width: collapsed ? 72 : 240 }}
+        style={{ width: collapsed ? 64 : 240 }}
       >
         {renderSidebarContent()}
       </aside>

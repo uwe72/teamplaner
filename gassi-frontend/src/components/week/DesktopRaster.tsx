@@ -1,19 +1,22 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
+import { Sun, Moon } from 'lucide-react'
 import type { PlanDto } from '../../types'
 import { heutigesDatum } from '../../utils/datum'
 import { eindeutigeInitialen } from '../../utils/kuerzel'
 import DayPill from './DayPill'
 import SlotCell, { type SlotCellAktionen } from './SlotCell'
 
-const RASTER_TEMPLATE = '132px repeat(7, minmax(0, 1fr))'
-const GAP = 10
+const RASTER_TEMPLATE = '128px repeat(7, minmax(0, 1fr))'
+const GAP = 8
 
 export default function DesktopRaster({
   plan,
   aktionen,
+  kompakt = false,
 }: {
   plan: PlanDto
   aktionen: SlotCellAktionen
+  kompakt?: boolean
 }) {
   const heute = heutigesDatum()
   const kuerzel = useMemo(
@@ -22,70 +25,83 @@ export default function DesktopRaster({
   )
 
   return (
-    <div className="flex flex-col" style={{ gap: GAP, marginTop: 24 }}>
-      <div className="grid items-center" style={{ gridTemplateColumns: RASTER_TEMPLATE, gap: GAP }}>
-        <div />
-        {plan.tage.map(datum => (
-          <DayPill key={datum} datum={datum} istHeute={datum === heute} varianz="horizontal" />
-        ))}
-      </div>
-      {plan.gruppen.map(gruppe => (
+    <div className="tp-scroll-x" style={{ overflowX: 'auto' }}>
+      <div
+        className="flex flex-col"
+        style={{ minWidth: 860, padding: 8, marginTop: kompakt ? 0 : 24 }}
+      >
         <div
-          key={gruppe.zeitfensterId}
-          className="grid"
-          style={{ gridTemplateColumns: RASTER_TEMPLATE, gap: GAP, minHeight: 104 }}
+          className="grid items-stretch"
+          style={{ gridTemplateColumns: RASTER_TEMPLATE, columnGap: GAP, rowGap: GAP }}
         >
-          <ZeilenPille name={gruppe.zeitfensterName} />
+          <div />
           {plan.tage.map(datum => (
-            <HeuteBand key={datum} aktiv={datum === heute}>
-              <ZellenSlot
-                datum={datum}
-                gruppe={gruppe}
-                plan={plan}
-                kuerzel={kuerzel}
-                aktionen={aktionen}
-              />
-            </HeuteBand>
+            <DayPill key={datum} datum={datum} istHeute={datum === heute} varianz="horizontal" />
+          ))}
+          {plan.gruppen.map(gruppe => (
+            <ZellenZeile
+              key={gruppe.zeitfensterId}
+              datumgruppe={gruppe}
+              plan={plan}
+              kuerzel={kuerzel}
+              aktionen={aktionen}
+            />
           ))}
         </div>
-      ))}
+      </div>
     </div>
   )
 }
 
-function HeuteBand({
-  aktiv,
-  children,
+function ZellenZeile({
+  datumgruppe: gruppe,
+  plan,
+  kuerzel,
+  aktionen,
 }: {
-  aktiv: boolean
-  children: ReactNode
+  datumgruppe: PlanDto['gruppen'][number]
+  plan: PlanDto
+  kuerzel: Map<string, string>
+  aktionen: SlotCellAktionen
 }) {
-  if (!aktiv) return <>{children}</>
-  return <div className="tp-heute-band flex" style={{ margin: `-${GAP / 2}px` }}>{children}</div>
+  return (
+    <>
+      <ZeilenPille name={gruppe.zeitfensterName} />
+      {plan.tage.map(datum => (
+        <ZellenSlot
+          key={datum}
+          datum={datum}
+          gruppe={gruppe}
+          plan={plan}
+          kuerzel={kuerzel}
+          aktionen={aktionen}
+        />
+      ))}
+    </>
+  )
 }
 
 function ZeilenPille({ name }: { name: string }) {
+  const bereinigt = name.replace(/^[^\p{L}\p{N}]+/u, '')
+  const abends = /abend|nacht/i.test(bereinigt)
+  const Icon = abends ? Moon : Sun
   return (
     <div
       className="flex items-center select-none"
-      style={{
-        backgroundColor: 'var(--tp-surface)',
-        borderRadius: 16,
-        padding: '8px 14px',
-        boxShadow: 'var(--tp-shadow)',
-      }}
-      title={name}
+      style={{ gap: 10, minHeight: 'var(--pm-cell-height)', paddingLeft: 8 }}
+      title={bereinigt}
     >
+      <Icon size={18} strokeWidth={1.5} color="var(--pm-muted)" aria-hidden="true" />
       <span
         style={{
-          fontSize: 15,
-          fontWeight: 800,
-          color: 'var(--tp-ink)',
+          fontSize: 14,
+          fontWeight: 700,
+          color: 'var(--pm-ink)',
           lineHeight: 1.25,
           overflowWrap: 'anywhere',
         }}
       >
-        {name}
+        {bereinigt}
       </span>
     </div>
   )
@@ -120,6 +136,7 @@ function ZellenSlot({
       <SlotCell
         datum={datum}
         zeitfensterId={gruppe.zeitfensterId}
+        zeitfensterName={gruppe.zeitfensterName}
         aufgabeId={aufgabeId}
         zeilenZuteilungen={zeilenZuteilungen}
         mitglieder={plan.mitglieder}

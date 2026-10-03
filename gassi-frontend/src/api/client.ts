@@ -152,4 +152,15 @@ api.interceptors.response.use(
   }
 )
 
+let besuchGepingt = false
+
+export function besuchPingen(): void {
+  const teamId = aktivesTeamId()
+  if (teamId == null || besuchGepingt) return
+  besuchGepingt = true
+  api.post(`/teams/${teamId}/besuche`).catch(() => {
+    besuchGepingt = false
+  })
+}
+
 export default api

@@ -56,6 +56,10 @@ public class Teammitglied {
     @Builder.Default
     private boolean aktiv = true;
 
+    @Column(name = "besuch_anzahl", nullable = false)
+    @Builder.Default
+    private Integer besuchAnzahl = 0;
+
     @Column(name = "farbe", length = 7)
     private String farbe;
 

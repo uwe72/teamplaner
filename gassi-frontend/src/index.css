@@ -27,6 +27,24 @@
   --tp-radius-cell: 20px;
   --tp-radius-pill: 16px;
 
+  /* Wochenansicht Desktop "Papier minimal" */
+  --pm-ground: #F7F6F3;
+  --pm-card: #FFFFFF;
+  --pm-border: #E8E6E1;
+  --pm-ink: #161616;
+  --pm-muted: #6B6862;
+  --pm-ring-track: #ECEAE5;
+  --pm-heute: #F3F1EC;
+  --pm-free-bg: #FFF4CC;
+  --pm-free-text: #5C4300;
+  --pm-free-plus: #F2C230;
+  --pm-cell-border: #EFEDE8;
+  --pm-hover-border: #D9D5CE;
+  --pm-bar-track: #F0EEEA;
+  --pm-radius-card: 16px;
+  --pm-radius-cell: 12px;
+  --pm-cell-height: 78px;
+
   /* Sidebar (Desktop) */
   --tp-sidebar: #221F1C;
   --tp-sidebar-text: #E7E2DC;
@@ -328,7 +346,7 @@ body {
 
 .hero-bg {
   background-size: 120% auto;
-  background-position: 0% 10%;
+  background-position: 0% 38.5%;
 }
 
 @media (max-width: 767.98px) {
@@ -885,6 +903,140 @@ body {
 .tp-focus:focus-visible {
   outline: 2px solid var(--tp-accent);
   outline-offset: 2px;
+}
+
+/* Papier minimal: Fokus und Hover der Desktop Wochenansicht */
+.pm-focus-visible:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+}
+
+.pm-page {
+  background-color: var(--pm-ground);
+}
+
+main:has(.pm-page) {
+  background: var(--pm-ground) !important;
+}
+
+.pm-card {
+  background-color: var(--pm-card);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-card);
+  box-shadow: none;
+}
+
+.pm-doppelt-karte {
+  background-color: var(--pm-card);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-card);
+  box-shadow: none;
+}
+
+.pm-trennlinie {
+  border: none;
+  border-top: 1px solid var(--pm-border);
+}
+
+.pm-pfeil {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--pm-border);
+  background-color: var(--pm-card);
+  color: var(--pm-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.pm-pfeil:hover:not(:disabled) {
+  background-color: var(--pm-heute);
+  border-color: var(--pm-hover-border);
+}
+
+.pm-pfeil:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pm-heute-knopf {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background-color: var(--pm-ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.pm-heute-knopf:hover {
+  background-color: #000;
+}
+
+.pm-zelle {
+  border: 1px solid var(--pm-cell-border);
+  border-radius: var(--pm-radius-cell);
+  background-color: var(--pm-card);
+  min-height: var(--pm-cell-height);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.pm-zelle:hover:not(:disabled) {
+  border-color: var(--pm-hover-border);
+}
+
+.pm-zelle--vergangen {
+  opacity: 0.62;
+}
+
+.pm-freigeben-chip {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pm-muted);
+  border: 1px solid var(--pm-border);
+  background-color: var(--pm-card);
+  border-radius: 8px;
+  padding: 2px 8px;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pm-zelle-eigene:hover .pm-freigeben-chip,
+  .pm-zelle-eigene:focus-visible .pm-freigeben-chip {
+    opacity: 1;
+  }
+}
+
+.pm-nicht-besetzt {
+  border: 1px dashed var(--pm-hover-border);
+  border-radius: var(--pm-radius-cell);
+  background-color: transparent;
+  color: var(--pm-muted);
+  cursor: default;
+}
+
+.pm-balken-spur {
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--pm-bar-track);
+  overflow: hidden;
+}
+
+.pm-balken-fuellung {
+  height: 100%;
+  border-radius: 5px;
+  background-color: var(--pm-ink);
 }
 
 .tp-heute-band {
