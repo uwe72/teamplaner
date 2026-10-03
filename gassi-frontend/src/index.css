@@ -320,12 +320,13 @@ body {
 }
 
 .hero-bg {
-  background-position: center 10%;
+  background-size: 120% auto;
+  background-position: 0% 10%;
 }
 
 @media (max-width: 767.98px) {
   .hero-bg {
-    background-position: center calc(10% - 40px);
+    background-position: 0% calc(10% - 40px);
   }
 }
 
