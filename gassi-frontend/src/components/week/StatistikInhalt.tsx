@@ -43,12 +43,14 @@ export default function StatistikInhalt({
   return (
     <div className={gestapelt ? 'grid items-start gap-8' : 'grid items-start gap-8 lg:grid-cols-2'}>
       <div>
-        <p style={{ fontSize: 17, fontWeight: 800, color: 'var(--tp-ink)' }}>
-          Gesamtanteil seit Start
-        </p>
-        <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--tp-muted)', marginTop: 2 }}>
-          Anteil an allen {LABELS.unitVonPlural} seit Beginn der Aufzeichnung
-        </p>
+        <div className="flex flex-wrap items-baseline" style={{ columnGap: 10, rowGap: 2 }}>
+          <p style={{ fontSize: 17, fontWeight: 800, color: 'var(--tp-ink)' }}>
+            Gesamtanteil
+          </p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--tp-muted)' }}>
+            Anteil an allen {LABELS.unitVonPlural} seit Beginn
+          </p>
+        </div>
         <div style={{ marginTop: 12 }}>
           {laedt ? (
             <div className="text-center py-8 text-muted">Laden...</div>
@@ -59,12 +61,14 @@ export default function StatistikInhalt({
       </div>
       {zeigeSollAbschnitt && (
         <div>
-          <p style={{ fontSize: 17, fontWeight: 800, color: 'var(--tp-ink)' }}>
-            Sollerfüllung
-          </p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--tp-muted)', marginTop: 2 }}>
-            Erledigte {LABELS.unitPlural} im Verhältnis zum eigenen Soll, seit Teamstart
-          </p>
+          <div className="flex flex-wrap items-baseline" style={{ columnGap: 10, rowGap: 2 }}>
+            <p style={{ fontSize: 17, fontWeight: 800, color: 'var(--tp-ink)' }}>
+              Sollerfüllung
+            </p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--tp-muted)' }}>
+              {LABELS.unitPlural} im Verhältnis zum eigenen Soll
+            </p>
+          </div>
           <div style={{ marginTop: 12 }}>
             {laedt ? (
               <div className="text-center py-8 text-muted">Laden...</div>
@@ -136,52 +140,73 @@ function Zeile({
   basis: number
   farbe: string | null
 }) {
-  const ueberschritten = zeile.ist > basis
+  const zaehler = `${zeile.ist} von ${basis}`
+  const zaehlerKompakt = `${zeile.ist}/${basis}`
+
   return (
-    <div className="flex flex-wrap items-center" style={{ gap: 12, rowGap: 6 }}>
-      <RundAvatar
-        mitgliedId={zeile.mitgliedId}
-        anzeigename={zeile.anzeigename}
-        avatarUrl={null}
-        groesse={30}
-        kuerzel={initialen(zeile.anzeigename)}
-        fallbackBg="var(--tp-soft)"
-        fallbackTextFarbe="var(--tp-ink)"
-        style={{ width: 30, height: 30, flexShrink: 0 }}
-      />
-      <span
-        style={{ fontSize: 14, fontWeight: 600, color: 'var(--tp-ink)', width: 72, flexShrink: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
-      >
-        {zeile.anzeigename}
-      </span>
-      <span className="stat-balken-spur" style={{ flex: '1 1 120px', minWidth: 0 }}>
-        <span
-          className="stat-balken-fuellung block"
-          style={{ width: `${Math.max(0, Math.min(100, zeile.prozent))}%`, height: 10, backgroundColor: farbe ?? 'var(--tp-accent)' }}
+    <>
+      <div className="flex sm:hidden flex-nowrap items-center" style={{ gap: 12 }}>
+        <RundAvatar
+          mitgliedId={zeile.mitgliedId}
+          anzeigename={zeile.anzeigename}
+          avatarUrl={null}
+          groesse={30}
+          kuerzel={initialen(zeile.anzeigename)}
+          fallbackBg="var(--tp-soft)"
+          fallbackTextFarbe="var(--tp-ink)"
+          style={{ width: 30, height: 30, flexShrink: 0 }}
         />
-      </span>
-      <span className="flex items-center whitespace-nowrap" style={{ gap: 6, flexShrink: 0 }}>
-        <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600, color: 'var(--tp-muted)' }}>
-          {`${zeile.ist} von ${basis} ${LABELS.unitVonPlural}`}
+        <span
+          style={{ fontSize: 14, fontWeight: 600, color: 'var(--tp-ink)', width: 64, flexShrink: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+        >
+          {zeile.anzeigename}
         </span>
-        {ueberschritten && (
+        <span className="stat-balken-spur min-w-0 flex-1">
           <span
-            className="rounded-full tabular-nums"
-            style={{
-              padding: '1px 8px',
-              backgroundColor: 'var(--tp-prog-over-bg)',
-              fontSize: 12,
-              fontWeight: 800,
-              color: 'var(--tp-prog-over-text)',
-            }}
-          >
-            {`+${zeile.ist - basis}`}
+            className="stat-balken-fuellung block"
+            style={{ width: `${Math.max(0, Math.min(100, zeile.prozent))}%`, height: 10, backgroundColor: farbe ?? 'var(--tp-accent)' }}
+          />
+        </span>
+        <span className="flex items-center whitespace-nowrap shrink-0" style={{ gap: 6 }}>
+          <span className="tabular-nums" style={{ fontSize: 12, fontWeight: 600, color: 'var(--tp-muted)', width: 36 }}>
+            {zaehlerKompakt}
           </span>
-        )}
-      </span>
-      <span className="tabular-nums whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: 'var(--tp-ink)', width: 60, textAlign: 'right' }}>
-        {prozentDeutsch(zeile.prozent)}
-      </span>
-    </div>
+          <span className="tabular-nums text-right" style={{ fontSize: 13, fontWeight: 700, color: 'var(--tp-ink)', width: 48 }}>
+            {`${Math.round(zeile.prozent)} %`}
+          </span>
+        </span>
+      </div>
+      <div className="hidden sm:flex flex-nowrap items-center" style={{ gap: 12, rowGap: 6 }}>
+        <RundAvatar
+          mitgliedId={zeile.mitgliedId}
+          anzeigename={zeile.anzeigename}
+          avatarUrl={null}
+          groesse={30}
+          kuerzel={initialen(zeile.anzeigename)}
+          fallbackBg="var(--tp-soft)"
+          fallbackTextFarbe="var(--tp-ink)"
+          style={{ width: 30, height: 30, flexShrink: 0 }}
+        />
+        <span
+          style={{ fontSize: 14, fontWeight: 600, color: 'var(--tp-ink)', width: 72, flexShrink: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+        >
+          {zeile.anzeigename}
+        </span>
+        <span className="stat-balken-spur" style={{ flex: '1 1 120px', minWidth: 0 }}>
+          <span
+            className="stat-balken-fuellung block"
+            style={{ width: `${Math.max(0, Math.min(100, zeile.prozent))}%`, height: 10, backgroundColor: farbe ?? 'var(--tp-accent)' }}
+          />
+        </span>
+        <span className="flex items-center whitespace-nowrap" style={{ gap: 6, flexShrink: 0 }}>
+          <span className="tabular-nums text-right" style={{ fontSize: 13, fontWeight: 600, color: 'var(--tp-muted)', width: 64, flexShrink: 0 }}>
+            {zaehler}
+          </span>
+        </span>
+        <span className="tabular-nums whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: 'var(--tp-ink)', width: 60, textAlign: 'right' }}>
+          {prozentDeutsch(zeile.prozent)}
+        </span>
+      </div>
+    </>
   )
 }

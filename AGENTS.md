@@ -72,6 +72,12 @@ npx tsc --noEmit
 - Tabbed panes always use the `/statistik`-page style: `src/components/Tabs.tsx` (underline style — `border-b border-border`, active `text-primary border-b-2 border-primary`); do not re-implement other tab/chip variants for page-level tab switching — reuse that component analog to `StatistikSeite.tsx`
 - All assignments live: renaming/Soll changes affect displayed history
 
+## Referenz-Design (bindend)
+
+- Die Desktop-Ansicht der Plan-Seite (`http://localhost:5173/plan/<bereichId>`, Stand 04.10.2026) ist die visuelle Referenz für die gesamte Teamplaner-App: Wochen-Karte mit „KW 40" links + Datumsbereich daneben, rechts `< Heute >` (dunkler Heute-Button), Person-Kacheln (Ring-Avatar, Name, „ist von soll" — pausiert-Mitglieder als normaler Zähler „0 von 0", kein „pausiert"-Badge) in derselben Karte unter Trennlinie, Papier-Raster (weiße Zellen mit feiner Border, Avatar + Name, gelbe „frei"-Zellen) auf eigener Karte, Statistik-Block („Gesamtanteil"/„Sollerfüllung") mit linksbündigen, exakt gleich langen Balken-Spuren ohne +N-Badge
+- Never change this design without the user explicitly asking for it
+- Do not rework desktop components to „angleichen" at the mobile design; desktop uses the papier/pm-classes (`pm-zelle`, `pm-freigeben-chip`, `--pm-*` tokens in `index.css`), mobile keeps the tp pipeline
+
 ## Versioning
 
 - Git hook in `.githooks/pre-commit` bumps the patch version on every commit (package.json source of truth, pom.xml mirrors project version). After fresh clone run once: `git config core.hooksPath .githooks`
@@ -81,3 +87,4 @@ npx tsc --noEmit
 - No automatic git commits/pushes — only when the user explicitly requests it
 - Consistent UI: maintain the established token system, spacing, card styles everywhere
 - Tests accompany new features; backend tests run in CI on every push to `main`
+- Bei UI-Anfragen, die nicht eindeutig sind: Wenn unklar ist bzw. der User es nicht explizit sagt, nachfragen, ob eine Änderung für die mobile und/oder die Desktop-Ansicht gilt — nie eigenmächtig beide anfassen

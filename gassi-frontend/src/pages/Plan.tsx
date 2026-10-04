@@ -352,29 +352,35 @@ export default function Plan() {
         <div className="flex flex-col gap-5" style={{ minHeight: '100%' }}>
           {planAbfrage.data && mobilerRasterAktionen ? (
             <>
-              <WeekBar
-                woche={zielWoche}
-                onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
-                onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
-                onHeute={() => setFokus(null)}
-                onStatistik={() => statistikRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                kwZeigen
-                className="shrink-0"
-              />
               <div className="rounded-[18px]" style={{ backgroundColor: 'var(--tp-surface)', boxShadow: 'var(--tp-shadow)', padding: 24, flexShrink: 0 }}>
+                <WeekBar
+                  woche={zielWoche}
+                  onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
+                  onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
+                  onHeute={() => setFokus(null)}
+                  kwZeigen
+                  blanko
+                />
+                <hr className="border-0 border-t" style={{ borderTopColor: 'var(--color-border)', margin: '14px 0 10px' }} />
                 <PeopleProgress
                   mitglieder={planAbfrage.data.mitglieder}
                   kumuliertProzent={Object.fromEntries(
                     (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
                   )}
+                  padding="0"
+                  kachel
+                  gap={24}
                   verteilen
                   onPersonKlick={() => statistikRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                 />
               </div>
-              <DesktopRaster
-                plan={planAbfrage.data}
-                aktionen={mobilerRasterAktionen}
-              />
+              <div className="rounded-[18px]" style={{ backgroundColor: 'var(--tp-surface)', boxShadow: 'var(--tp-shadow)', padding: 24, flexShrink: 0 }}>
+                <DesktopRaster
+                  plan={planAbfrage.data}
+                  aktionen={mobilerRasterAktionen}
+                  kompakt
+                />
+              </div>
               <div
                 ref={statistikRef}
                 className="rounded-[18px]"

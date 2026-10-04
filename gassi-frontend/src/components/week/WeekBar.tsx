@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { wochenbereichBis, wochenRelativLabel, type IsoWoche } from '../../utils/datum'
+import { wochenbereichBis, wochenbereichLang, wochenRelativLabel, type IsoWoche } from '../../utils/datum'
 import BalkenDiagramm from './BalkenDiagramm'
 
 export default function WeekBar({
@@ -10,6 +10,7 @@ export default function WeekBar({
   onStatistik,
   zeigeStatistikButton = true,
   kwZeigen = false,
+  blanko = false,
   className = '',
 }: {
   woche: IsoWoche
@@ -19,8 +20,71 @@ export default function WeekBar({
   onStatistik?: () => void
   zeigeStatistikButton?: boolean
   kwZeigen?: boolean
+  blanko?: boolean
   className?: string
 }) {
+  if (kwZeigen) {
+    return (
+      <div
+        className={`flex items-center justify-between flex-wrap gap-3 shrink-0 ${className}`}
+        style={blanko ? undefined : {
+          backgroundColor: 'var(--tp-surface)',
+          boxShadow: 'var(--tp-shadow)',
+          borderRadius: 18,
+          padding: '10px 14px',
+        }}
+      >
+        <div className="flex items-baseline flex-wrap min-w-0">
+          <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--tp-ink)', lineHeight: 1.15, fontVariantNumeric: 'tabular-nums', marginRight: 12 }}>
+            {`KW ${woche.isoWoche}`}
+          </span>
+          <span style={{ fontSize: 14, color: 'var(--tp-muted)', fontVariantNumeric: 'tabular-nums' }}>
+            {wochenbereichLang(woche)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            title="Vorherige Woche"
+            aria-label="Vorherige Woche"
+            className="inline-flex items-center justify-center shrink-0 tp-focus"
+            style={{ width: 40, height: 40, borderRadius: 12, border: '1px solid var(--color-border)', backgroundColor: 'var(--tp-surface)', color: 'var(--tp-ink)' }}
+            onClick={onVorherige}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button"
+            title="Zur aktuellen Woche"
+            className="inline-flex items-center justify-center shrink-0 tp-focus"
+            style={{
+              height: 40,
+              padding: '0 18px',
+              borderRadius: 12,
+              backgroundColor: 'var(--tp-accent)',
+              color: 'var(--tp-on-accent)',
+              fontSize: 14,
+              fontWeight: 700,
+            }}
+            onClick={onHeute}
+          >
+            Heute
+          </button>
+          <button
+            type="button"
+            title="Nächste Woche"
+            aria-label="Nächste Woche"
+            className="inline-flex items-center justify-center shrink-0 tp-focus"
+            style={{ width: 40, height: 40, borderRadius: 12, border: '1px solid var(--color-border)', backgroundColor: 'var(--tp-surface)', color: 'var(--tp-ink)' }}
+            onClick={onNaechste}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const relativ = wochenRelativLabel(woche)
   const istAktuell = relativ === 'Diese Woche'
   const zeigeHeute = !istAktuell && !!onHeute
@@ -41,11 +105,6 @@ export default function WeekBar({
       </button>
 
       <div className="flex-1 flex flex-col items-center justify-center leading-tight min-w-0">
-        {kwZeigen && (
-          <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--tp-ink)', lineHeight: 1.15, fontVariantNumeric: 'tabular-nums' }}>
-            {`KW ${woche.isoWoche}`}
-          </span>
-        )}
         <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--tp-ink)' }}>
           {wochenbereichBis(woche)}
         </span>

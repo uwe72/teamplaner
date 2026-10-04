@@ -9,6 +9,8 @@ import { rundeVergangen } from '../../utils/runde'
 import { vorname } from '../../utils/vorname'
 import { LABELS } from '../../utils/texte'
 
+const DESKTOP_AVATAR_GROESSE = 50
+
 export interface SlotCellAktionen {
   eigeneId: number
   heute: string
@@ -70,16 +72,99 @@ export default function SlotCell({
 
   const vergangen = rundeVergangen(datum, { zeitfensterName: zeitfensterName ?? null })
 
-  if (desktop && istFrei && vergangen && !aktionen.istAdmin) {
+  if (desktop) {
+    if (istFrei && vergangen && !aktionen.istAdmin) {
+      return (
+        <div
+          className="pm-nicht-besetzt flex items-center justify-center w-full"
+          style={{ minHeight: 'var(--pm-cell-height)' }}
+          aria-label={`${wochentag}: nicht besetzt`}
+          title={`${wochentag}: nicht besetzt`}
+        >
+          <span style={{ fontSize: 13, color: 'var(--pm-muted)' }}>nicht besetzt</span>
+        </div>
+      )
+    }
+
+    const bestezeilen = zeilenZuteilungen.filter(z => z.mitgliedId)
+
+    const klickDesktop = () => {
+      if (istFrei || (mehrere && teilweise)) {
+        aktionen.onFreiKlick(datum, zeitfensterId)
+      } else if (mehrere) {
+        aktionen.onBelegtKlick(datum, zeitfensterId)
+      } else if (istEigene && zeilenZuteilungen[0]?.id != null) {
+        aktionen.onEigeneKlick(datum, zeilenZuteilungen[0].id)
+      } else if (istEigene) {
+        aktionen.onFreiKlick(datum, zeitfensterId)
+      }
+    }
+
+    if (istFrei || (mehrere && bestezeilen.length === 0)) {
+      return (
+        <button
+          ref={setNodeRef}
+          type="button"
+          className="pm-zelle tp-focus flex items-center justify-center w-full px-2"
+          style={{
+            border: 'none',
+            backgroundColor: 'var(--pm-free-bg)',
+            outline: isOver ? '2px solid var(--pm-ink)' : undefined,
+            cursor: 'pointer',
+            touchAction: 'none',
+          }}
+          aria-label={`${wochentag}, ${LABELS.unitSingular} frei — antippen zum Übernehmen`}
+          title="frei"
+          onClick={klickDesktop}
+        >
+          <span className={`flex items-center gap-2 select-none ${pop ?? ''}`}>
+            <span
+              className="inline-flex items-center justify-center rounded-full shrink-0"
+              style={{ width: 30, height: 30, backgroundColor: 'var(--pm-free-plus)' }}
+            >
+              <Plus farbe="#fff" groesse={14} />
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--pm-free-text)' }}>frei</span>
+          </span>
+        </button>
+      )
+    }
+
+    const zeigeFreigabeChipDesktop = (!vergangen || aktionen.istAdmin) && istEigene
+    const personenEindeutig: MitgliedPlanInfo[] = []
+    for (const id of new Set(bestezeilen.map(z => z.mitgliedId))) {
+      const p = mitglieder.find(m => m.id === id)
+      if (p) personenEindeutig.push(p)
+    }
+    const namenText = personenEindeutig.map(p => p.anzeigename).join(', ')
+
     return (
-      <div
-        className="stat-nicht-besetzt flex items-center justify-center w-full"
-        style={{ minHeight: 'var(--tp-cell-height)' }}
-        aria-label={`${wochentag}: nicht besetzt`}
-        title={`${wochentag}: nicht besetzt`}
+      <button
+        ref={setNodeRef}
+        type="button"
+        className={`pm-zelle tp-focus relative flex items-center justify-center w-full px-3 ${zeigeFreigabeChipDesktop ? 'pm-zelle-eigene' : ''}`}
+        style={{
+          outline: isOver ? '2px solid var(--pm-ink)' : undefined,
+          cursor: 'pointer',
+          touchAction: 'none',
+        }}
+        title={`${wochentag}: ${namenText}`}
+        onClick={klickDesktop}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tp-muted)' }}>nicht besetzt</span>
-      </div>
+        <span className={`flex items-center justify-center w-full min-w-0 ${pop ?? ''}`}>
+          <DesktopPersonen personen={personenEindeutig} kuerzel={kuerzelMap} />
+          {personenEindeutig.length === 1 && (
+            <span
+              className="min-w-0"
+              style={{ flex: 1, fontSize: 16, fontWeight: 600, color: 'var(--pm-ink)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+              title={namenText}
+            >
+              {namenText}
+            </span>
+          )}
+        </span>
+        {zeigeFreigabeChipDesktop && <span className="pm-freigeben-chip" aria-hidden="true">Freigeben</span>}
+      </button>
     )
   }
 
@@ -101,7 +186,7 @@ export default function SlotCell({
       ? `${wochentag}: du, antippen zum Freigeben`
       : `${wochentag}: ${name}`
 
-  const bg = istEigene && !istFrei ? 'var(--tp-mine)' : 'var(--tp-surface)'
+  const bg = 'var(--tp-surface)'
   let border = '2px solid transparent'
   if (istFrei) border = '2px dashed var(--tp-free-border)'
   else if (istHeute) border = '2px solid var(--tp-accent)'
@@ -260,6 +345,38 @@ export default function SlotCell({
       )}
       {zeigeFreigabeChip && <span className="tp-freigeben-chip" aria-hidden="true">Freigeben</span>}
     </button>
+  )
+}
+
+function DesktopPersonen({
+  personen,
+  kuerzel,
+}: {
+  personen: MitgliedPlanInfo[]
+  kuerzel: Map<string, string>
+}) {
+  return (
+    <span className="relative inline-flex shrink-0 items-center">
+      {personen.map((p, index) => (
+        <RundAvatar
+          key={p.id}
+          mitgliedId={p.id}
+          anzeigename={p.anzeigename}
+          avatarUrl={p.avatarUrl}
+          groesse={DESKTOP_AVATAR_GROESSE}
+          kuerzel={kuerzel.get(p.anzeigename)}
+          fallbackBg="var(--pm-heute)"
+          fallbackTextFarbe="var(--pm-ink)"
+          style={{
+            width: DESKTOP_AVATAR_GROESSE,
+            height: DESKTOP_AVATAR_GROESSE,
+            marginLeft: index > 0 ? -12 : 0,
+            boxShadow: '0 0 0 2px #fff',
+            zIndex: personen.length - index,
+          }}
+        />
+      ))}
+    </span>
   )
 }
 
