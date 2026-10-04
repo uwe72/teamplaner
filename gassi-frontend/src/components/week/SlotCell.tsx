@@ -7,7 +7,7 @@ import Plus from './Plus'
 import { personFarbe } from '../../utils/farben'
 import { rundeVergangen } from '../../utils/runde'
 import { vorname } from '../../utils/vorname'
-import { PM_AVATAR_GROESSE } from './PeopleProgress'
+import { LABELS } from '../../utils/texte'
 
 export interface SlotCellAktionen {
   eigeneId: number
@@ -45,6 +45,7 @@ export default function SlotCell({
   varianz = 'mobil',
 }: SlotCellProps) {
   const desktop = varianz === 'desktop'
+  const avatarGroesse = desktop ? 50 : 60
   const droppableId = aufgabeId != null ? `box-${aufgabeId}-${datum}` : `slot-${zeitfensterId}-${datum}`
   const { setNodeRef, isOver } = useDroppable({ id: droppableId })
 
@@ -67,117 +68,20 @@ export default function SlotCell({
   const name = person?.anzeigename ?? zeilenZuteilungen[0]?.anzeigename ?? ''
   const { data: bildUrl } = useAvatar(person?.id ?? null, person?.avatarUrl ?? null)
 
-  if (desktop) {
-    const vergangen = rundeVergangen(datum, { zeitfensterName: zeitfensterName ?? null })
-    const bestezeilen = zeilenZuteilungen.filter(z => z.mitgliedId)
+  const vergangen = rundeVergangen(datum, { zeitfensterName: zeitfensterName ?? null })
 
-    if (istFrei && vergangen && !aktionen.istAdmin) {
-      return (
-        <div
-          className="pm-nicht-besetzt flex items-center justify-center w-full"
-          style={{ minHeight: 'var(--pm-cell-height)' }}
-          aria-label={`${wochentag}: nicht besetzt`}
-          title={`${wochentag}: nicht besetzt`}
-        >
-          <span style={{ fontSize: 13, color: 'var(--pm-muted)' }}>nicht besetzt</span>
-        </div>
-      )
-    }
-
-    const klick = () => {
-      if (istFrei || (mehrere && teilweise)) {
-        aktionen.onFreiKlick(datum, zeitfensterId)
-      } else if (mehrere) {
-        aktionen.onBelegtKlick(datum, zeitfensterId)
-      } else if (istEigene && zeilenZuteilungen[0]?.id != null) {
-        aktionen.onEigeneKlick(datum, zeilenZuteilungen[0].id)
-      } else if (istEigene) {
-        aktionen.onFreiKlick(datum, zeitfensterId)
-      }
-    }
-
-    if (istFrei || (mehrere && bestezeilen.length === 0)) {
-      return (
-        <button
-          ref={setNodeRef}
-          type="button"
-          className="pm-zelle pm-focus-visible flex items-center justify-center w-full px-2"
-          style={{
-            border: 'none',
-            backgroundColor: 'var(--pm-free-bg)',
-            outline: isOver ? '2px solid var(--pm-ink)' : undefined,
-            cursor: 'pointer',
-            touchAction: 'none',
-          }}
-          aria-label={`${wochentag}, Runde frei — antippen zum Übernehmen`}
-          title="frei"
-          onClick={klick}
-        >
-          <span className={`flex items-center gap-2 select-none ${pop ?? ''}`}>
-            <span
-              className="inline-flex items-center justify-center rounded-full shrink-0"
-              style={{ width: 30, height: 30, backgroundColor: 'var(--pm-free-plus)' }}
-            >
-              <Plus farbe="#fff" groesse={14} />
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--pm-free-text)' }}>frei</span>
-          </span>
-        </button>
-      )
-    }
-
-    const zeigeFreigabeChip = (!vergangen || aktionen.istAdmin) && istEigene
-    const personenEindeutig: MitgliedPlanInfo[] = []
-    for (const id of new Set(bestezeilen.map(z => z.mitgliedId))) {
-      const p = mitglieder.find(m => m.id === id)
-      if (p) personenEindeutig.push(p)
-    }
-    const namenText = personenEindeutig.map(p => p.anzeigename).join(', ')
-
+  if (desktop && istFrei && vergangen && !aktionen.istAdmin) {
     return (
-      <button
-        ref={setNodeRef}
-        type="button"
-        className={`pm-zelle pm-focus-visible relative flex items-center justify-center w-full px-3 ${zeigeFreigabeChip ? 'pm-zelle-eigene' : ''}`}
-        style={{
-          outline: isOver ? '2px solid var(--pm-ink)' : undefined,
-          cursor: 'pointer',
-          touchAction: 'none',
-        }}
-        title={`${wochentag}: ${namenText}`}
-        onClick={klick}
+      <div
+        className="stat-nicht-besetzt flex items-center justify-center w-full"
+        style={{ minHeight: 'var(--tp-cell-height)' }}
+        aria-label={`${wochentag}: nicht besetzt`}
+        title={`${wochentag}: nicht besetzt`}
       >
-        <span className={`flex items-center justify-center w-full min-w-0 ${pop ?? ''}`}>
-          <DesktopPersonen personen={personenEindeutig} kuerzel={kuerzelMap} />
-          {personenEindeutig.length === 1 && (
-            <span
-              className="min-w-0"
-              style={{ flex: 1, fontSize: 16, fontWeight: 600, color: 'var(--pm-ink)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
-              title={namenText}
-            >
-              {namenText}
-            </span>
-          )}
-        </span>
-        {zeigeFreigabeChip && <span className="pm-freigeben-chip" aria-hidden="true">Freigeben</span>}
-      </button>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tp-muted)' }}>nicht besetzt</span>
+      </div>
     )
   }
-
-  const bg = 'var(--tp-surface)'
-  let border = '2px solid transparent'
-  if (istFrei) border = '2px dashed var(--tp-free-border)'
-  else if (istHeute) border = '2px solid var(--tp-accent)'
-
-  const kuerzel = name ? kuerzelMap.get(name) : undefined
-  const farbe = personFarbe(person, mitglieder)
-  const vornameText = vorname(name)
-  const vornameKurz = vornameText.slice(0, 8) + (vornameText.length > 8 ? '…' : '')
-  const ariaLabel = istFrei
-    ? `${wochentag}, Runde frei — antippen zum Übernehmen`
-    : istEigene
-      ? `${wochentag}: du, antippen zum Freigeben`
-      : `${wochentag}: ${name}`
 
   function klick() {
     if (istFrei || (mehrere && teilweise)) {
@@ -191,13 +95,29 @@ export default function SlotCell({
     }
   }
 
-  const hoverKlasse = undefined
+  const ariaLabel = istFrei
+    ? `${wochentag}: ${LABELS.unitSingular} frei, antippen zum Übernehmen`
+    : istEigene
+      ? `${wochentag}: du, antippen zum Freigeben`
+      : `${wochentag}: ${name}`
+
+  const bg = istEigene && !istFrei ? 'var(--tp-mine)' : 'var(--tp-surface)'
+  let border = '2px solid transparent'
+  if (istFrei) border = '2px dashed var(--tp-free-border)'
+  else if (istHeute) border = '2px solid var(--tp-accent)'
+
+  const kuerzel = name ? kuerzelMap.get(name) : undefined
+  const farbe = personFarbe(person, mitglieder)
+  const vornameText = vorname(name)
+  const vornameKurz = vornameText.slice(0, 8) + (vornameText.length > 8 ? '…' : '')
+
+  const zeigeFreigabeChip = (!vergangen || aktionen.istAdmin) && istEigene
 
   return (
     <button
       ref={setNodeRef}
       type="button"
-      className={`tp-cell flex items-center justify-center w-full h-full px-1 py-0.5 ${hoverKlasse} tp-focus`}
+      className={`tp-cell tp-hover-frei relative flex items-center justify-center w-full h-full px-1 py-0.5 ${istEigene ? 'tp-zelle-eigene' : ''} tp-focus`}
       style={{
         borderRadius: 'var(--tp-radius-cell)',
         backgroundColor: bg,
@@ -214,7 +134,7 @@ export default function SlotCell({
         <span className="flex items-center gap-1.5 select-none">
           <span
             className="inline-flex items-center justify-center rounded-full shrink-0 tp-pulse"
-            style={{ width: 40, height: 40, backgroundColor: 'var(--tp-free-bg)', transform: 'scale(1.02)' }}
+            style={{ width: 40, height: 40, backgroundColor: 'var(--tp-free-bg)' }}
           >
             <Plus farbe="var(--tp-free)" groesse={22} />
           </span>
@@ -277,9 +197,9 @@ export default function SlotCell({
                     bottom: 0,
                     backgroundColor: 'var(--tp-free-bg)',
                     border: '2px dashed var(--tp-free-border)',
-                    boxShadow: '0 0 0 2px #fff',
+                    boxShadow: '0 0 0 2px var(--tp-surface)',
                   }}
-                  aria-label="Runde teilweise frei"
+                  aria-label={`${LABELS.unitSingular} teilweise frei`}
                 />
               </span>
             )
@@ -293,7 +213,7 @@ export default function SlotCell({
           <span
             className="relative inline-flex items-center justify-center shrink-0"
             style={{
-              height: 'min(60px, calc(100% - 8px))',
+              height: `min(${avatarGroesse}px, calc(100% - 8px))`,
               width: 'auto',
               aspectRatio: '1 / 1',
             }}
@@ -302,13 +222,13 @@ export default function SlotCell({
               mitgliedId={person?.id ?? null}
               anzeigename={name}
               avatarUrl={person?.avatarUrl ?? null}
-              groesse={60}
+              groesse={avatarGroesse}
               kuerzel={kuerzel}
               farbe={farbe}
               style={{
                 width: '100%',
                 height: '100%',
-                boxShadow: '0 0 0 3px #fff, var(--tp-shadow-avatar)',
+                boxShadow: '0 0 0 3px var(--tp-surface), var(--tp-shadow-avatar)',
               }}
             />
             {mehrere && teilweise && (
@@ -321,9 +241,9 @@ export default function SlotCell({
                   bottom: -2,
                   backgroundColor: 'var(--tp-free-bg)',
                   border: '2px dashed var(--tp-free-border)',
-                  boxShadow: '0 0 0 2px #fff',
+                  boxShadow: '0 0 0 2px var(--tp-surface)',
                 }}
-                aria-label="Runde teilweise frei"
+                aria-label={`${LABELS.unitSingular} teilweise frei`}
               />
             )}
           </span>
@@ -338,39 +258,8 @@ export default function SlotCell({
           )}
         </span>
       )}
+      {zeigeFreigabeChip && <span className="tp-freigeben-chip" aria-hidden="true">Freigeben</span>}
     </button>
-  )
-}
-
-function DesktopPersonen({
-  personen,
-  kuerzel,
-}: {
-  personen: MitgliedPlanInfo[]
-  kuerzel: Map<string, string>
-}) {
-  return (
-    <span className="relative inline-flex shrink-0 items-center">
-      {personen.map((p, index) => (
-        <RundAvatar
-          key={p.id}
-          mitgliedId={p.id}
-          anzeigename={p.anzeigename}
-          avatarUrl={p.avatarUrl}
-          groesse={PM_AVATAR_GROESSE}
-          kuerzel={kuerzel.get(p.anzeigename)}
-          fallbackBg="var(--pm-heute)"
-          fallbackTextFarbe="var(--pm-ink)"
-          style={{
-            width: PM_AVATAR_GROESSE,
-            height: PM_AVATAR_GROESSE,
-            marginLeft: index > 0 ? -12 : 0,
-            boxShadow: '0 0 0 2px #fff',
-            zIndex: personen.length - index,
-          }}
-        />
-      ))}
-    </span>
   )
 }
 
@@ -404,7 +293,7 @@ function PersonKreis({
         style={{
           width: groesse,
           height: groesse,
-          boxShadow: '0 0 0 3px #fff, var(--tp-shadow-avatar)',
+          boxShadow: '0 0 0 3px var(--tp-surface), var(--tp-shadow-avatar)',
           zIndex: vorderster ? 1 : 0,
         }}
       />

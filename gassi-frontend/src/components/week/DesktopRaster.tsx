@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { Sun, Moon } from 'lucide-react'
 import type { PlanDto } from '../../types'
 import { heutigesDatum } from '../../utils/datum'
 import { eindeutigeInitialen } from '../../utils/kuerzel'
@@ -12,11 +11,9 @@ const GAP = 8
 export default function DesktopRaster({
   plan,
   aktionen,
-  kompakt = false,
 }: {
   plan: PlanDto
   aktionen: SlotCellAktionen
-  kompakt?: boolean
 }) {
   const heute = heutigesDatum()
   const kuerzel = useMemo(
@@ -25,30 +22,23 @@ export default function DesktopRaster({
   )
 
   return (
-    <div className="tp-scroll-x" style={{ overflowX: 'auto' }}>
-      <div
-        className="flex flex-col"
-        style={{ minWidth: 860, padding: 8, marginTop: kompakt ? 0 : 24 }}
-      >
-        <div
-          className="grid items-stretch"
-          style={{ gridTemplateColumns: RASTER_TEMPLATE, columnGap: GAP, rowGap: GAP }}
-        >
-          <div />
-          {plan.tage.map(datum => (
-            <DayPill key={datum} datum={datum} istHeute={datum === heute} varianz="horizontal" />
-          ))}
-          {plan.gruppen.map(gruppe => (
-            <ZellenZeile
-              key={gruppe.zeitfensterId}
-              datumgruppe={gruppe}
-              plan={plan}
-              kuerzel={kuerzel}
-              aktionen={aktionen}
-            />
-          ))}
-        </div>
-      </div>
+    <div
+      className="grid items-stretch"
+      style={{ gridTemplateColumns: RASTER_TEMPLATE, columnGap: GAP, rowGap: GAP, minWidth: 0 }}
+    >
+      <div />
+      {plan.tage.map(datum => (
+        <DayPill key={datum} datum={datum} istHeute={datum === heute} varianz="horizontal" />
+      ))}
+      {plan.gruppen.map(gruppe => (
+        <ZellenZeile
+          key={gruppe.zeitfensterId}
+          datumgruppe={gruppe}
+          plan={plan}
+          kuerzel={kuerzel}
+          aktionen={aktionen}
+        />
+      ))}
     </div>
   )
 }
@@ -83,20 +73,17 @@ function ZellenZeile({
 
 function ZeilenPille({ name }: { name: string }) {
   const bereinigt = name.replace(/^[^\p{L}\p{N}]+/u, '')
-  const abends = /abend|nacht/i.test(bereinigt)
-  const Icon = abends ? Moon : Sun
   return (
     <div
       className="flex items-center select-none"
-      style={{ gap: 10, minHeight: 'var(--pm-cell-height)', paddingLeft: 8 }}
+      style={{ gap: 10, minHeight: 'var(--tp-cell-height)', paddingLeft: 8 }}
       title={bereinigt}
     >
-      <Icon size={18} strokeWidth={1.5} color="var(--pm-muted)" aria-hidden="true" />
       <span
         style={{
           fontSize: 14,
-          fontWeight: 700,
-          color: 'var(--pm-ink)',
+          fontWeight: 800,
+          color: 'var(--tp-ink)',
           lineHeight: 1.25,
           overflowWrap: 'anywhere',
         }}
@@ -132,7 +119,7 @@ function ZellenSlot({
   const aufgabeId = gruppe.zeilen.length === 1 ? gruppe.zeilen[0].aufgabe.id : null
 
   return (
-    <div style={{ display: 'flex', width: '100%' }}>
+    <div style={{ display: 'flex', width: '100%', minHeight: 'var(--tp-cell-height)' }}>
       <SlotCell
         datum={datum}
         zeitfensterId={gruppe.zeitfensterId}

@@ -13,7 +13,6 @@ import AufgabenZeilenOverlay from '../components/AufgabenZeilenOverlay'
 import WeekBar from '../components/week/WeekBar'
 import PeopleProgress from '../components/week/PeopleProgress'
 import DesktopRaster from '../components/week/DesktopRaster'
-import PlanContentCard from '../components/week/PlanContentCard'
 import WeekRaster, { type ZeitfensterZellInfo } from '../components/week/WeekRaster'
 import StatistikPopup from '../components/week/StatistikPopup'
 import StatistikInhalt from '../components/week/StatistikInhalt'
@@ -40,7 +39,6 @@ export default function Plan() {
   >(null)
   const [popCellKey, setPopCellKey] = useState<string | null>(null)
   const [statistikOffen, setStatistikOffen] = useState(false)
-  const [statistikMonatReset, setStatistikMonatReset] = useState(0)
   const statistikRef = useRef<HTMLDivElement | null>(null)
 
   const bereicheAbfrage = useBereiche()
@@ -351,42 +349,41 @@ export default function Plan() {
           )}
         </div>
       ) : (
-        <div className="pm-page flex flex-col gap-5" style={{ minHeight: '100%' }}>
+        <div className="flex flex-col gap-5" style={{ minHeight: '100%' }}>
           {planAbfrage.data && mobilerRasterAktionen ? (
             <>
-              <PlanContentCard
+              <WeekBar
                 woche={zielWoche}
                 onVorherige={() => setFokus(verschiebeIsoWoche(zielWoche, -1))}
                 onNaechste={() => setFokus(verschiebeIsoWoche(zielWoche, 1))}
-                onHeute={() => {
-                  setFokus(null)
-                  setStatistikMonatReset(z => z + 1)
-                }}
-                style={{ flexShrink: 0 }}
-              >
+                onHeute={() => setFokus(null)}
+                onStatistik={() => statistikRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                kwZeigen
+                className="shrink-0"
+              />
+              <div className="rounded-[18px]" style={{ backgroundColor: 'var(--tp-surface)', boxShadow: 'var(--tp-shadow)', padding: 24, flexShrink: 0 }}>
                 <PeopleProgress
                   mitglieder={planAbfrage.data.mitglieder}
-                  papier
-                  ringGroesse={56}
-                  gap={24}
+                  kumuliertProzent={Object.fromEntries(
+                    (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
+                  )}
                   verteilen
                   onPersonKlick={() => statistikRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                 />
-              </PlanContentCard>
-              <div className="pm-card" style={{ padding: 24, flexShrink: 0 }}>
-                <DesktopRaster
-                  plan={planAbfrage.data}
-                  aktionen={mobilerRasterAktionen}
-                  kompakt
-                />
               </div>
-              <div ref={statistikRef} className="pm-card" style={{ padding: 24, flexShrink: 0 }}>
+              <DesktopRaster
+                plan={planAbfrage.data}
+                aktionen={mobilerRasterAktionen}
+              />
+              <div
+                ref={statistikRef}
+                className="rounded-[18px]"
+                style={{ backgroundColor: 'var(--tp-surface)', boxShadow: 'var(--tp-shadow)', padding: 24, flexShrink: 0 }}
+              >
                 {bereichId != null && (
                   <StatistikInhalt
                     bereichId={bereichId}
                     nebeneinander
-                    woche={zielWoche}
-                    monatZuruecksetzenSignal={statistikMonatReset}
                   />
                 )}
               </div>

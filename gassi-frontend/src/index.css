@@ -4,7 +4,7 @@
 :root {
   color-scheme: light;
 
-  /* Teamplaner Wochenansicht (mobil) */
+  /* Teamplaner Wochenansicht (mobil + Desktop) */
   --tp-ground: #E7E5E4;
   --tp-surface: #FFFFFF;
   --tp-soft: #DAD7D4;
@@ -22,28 +22,13 @@
   --tp-prog-mid: #F08C00;
   --tp-prog-high: #74B816;
   --tp-prog-done: #2F9E44;
+  --tp-prog-over-bg: #E3F6E6;
+  --tp-prog-over-text: #2F7A3A;
   --tp-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   --tp-shadow-avatar: 0 3px 10px rgba(0, 0, 0, 0.18);
   --tp-radius-cell: 20px;
   --tp-radius-pill: 16px;
-
-  /* Wochenansicht Desktop "Papier minimal" */
-  --pm-ground: #F7F6F3;
-  --pm-card: #FFFFFF;
-  --pm-border: #E8E6E1;
-  --pm-ink: #161616;
-  --pm-muted: #6B6862;
-  --pm-ring-track: #ECEAE5;
-  --pm-heute: #F3F1EC;
-  --pm-free-bg: #FFF4CC;
-  --pm-free-text: #5C4300;
-  --pm-free-plus: #F2C230;
-  --pm-cell-border: #EFEDE8;
-  --pm-hover-border: #D9D5CE;
-  --pm-bar-track: #F0EEEA;
-  --pm-radius-card: 16px;
-  --pm-radius-cell: 12px;
-  --pm-cell-height: 78px;
+  --tp-cell-height: 78px;
 
   /* Sidebar (Desktop) */
   --tp-sidebar: #221F1C;
@@ -905,104 +890,16 @@ body {
   outline-offset: 2px;
 }
 
-/* Papier minimal: Fokus und Hover der Desktop Wochenansicht */
-.pm-focus-visible:focus-visible {
-  outline: 2px solid var(--pm-ink);
-  outline-offset: 2px;
-}
-
-.pm-page {
-  background-color: var(--pm-ground);
-}
-
-main:has(.pm-page) {
-  background: var(--pm-ground) !important;
-}
-
-.pm-card {
-  background-color: var(--pm-card);
-  border: 1px solid var(--pm-border);
-  border-radius: var(--pm-radius-card);
-  box-shadow: none;
-}
-
-.pm-doppelt-karte {
-  background-color: var(--pm-card);
-  border: 1px solid var(--pm-border);
-  border-radius: var(--pm-radius-card);
-  box-shadow: none;
-}
-
-.pm-trennlinie {
-  border: none;
-  border-top: 1px solid var(--pm-border);
-}
-
-.pm-pfeil {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid var(--pm-border);
-  background-color: var(--pm-card);
-  color: var(--pm-ink);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.pm-pfeil:hover:not(:disabled) {
-  background-color: var(--pm-heute);
-  border-color: var(--pm-hover-border);
-}
-
-.pm-pfeil:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.pm-heute-knopf {
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 12px;
-  background-color: var(--pm-ink);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.pm-heute-knopf:hover {
-  background-color: #000;
-}
-
-.pm-zelle {
-  border: 1px solid var(--pm-cell-border);
-  border-radius: var(--pm-radius-cell);
-  background-color: var(--pm-card);
-  min-height: var(--pm-cell-height);
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.pm-zelle:hover:not(:disabled) {
-  border-color: var(--pm-hover-border);
-}
-
-.pm-zelle--vergangen {
-  opacity: 0.62;
-}
-
-.pm-freigeben-chip {
+/* Eigene Zellen: Freigeben-Chip bei Hover/Tastaturfokus */
+.tp-freigeben-chip {
   position: absolute;
   top: 6px;
   right: 8px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--pm-muted);
-  border: 1px solid var(--pm-border);
-  background-color: var(--pm-card);
+  color: var(--tp-muted);
+  border: 1px solid var(--tp-soft);
+  background-color: var(--tp-surface);
   border-radius: 8px;
   padding: 2px 8px;
   line-height: 1.4;
@@ -1012,36 +909,31 @@ main:has(.pm-page) {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .pm-zelle-eigene:hover .pm-freigeben-chip,
-  .pm-zelle-eigene:focus-visible .pm-freigeben-chip {
+  .tp-zelle-eigene:hover .tp-freigeben-chip,
+  .tp-zelle-eigene:focus-visible .tp-freigeben-chip {
     opacity: 1;
   }
 }
 
-.pm-nicht-besetzt {
-  border: 1px dashed var(--pm-hover-border);
-  border-radius: var(--pm-radius-cell);
-  background-color: transparent;
-  color: var(--pm-muted);
+.stat-nicht-besetzt {
+  border: 2px dashed var(--tp-soft);
+  border-radius: var(--tp-radius-cell);
+  background-color: var(--tp-surface);
+  color: var(--tp-muted);
   cursor: default;
 }
 
-.pm-balken-spur {
+.stat-balken-spur {
   height: 10px;
   border-radius: 5px;
-  background-color: var(--pm-bar-track);
+  background-color: var(--tp-soft);
   overflow: hidden;
 }
 
-.pm-balken-fuellung {
+.stat-balken-fuellung {
   height: 100%;
   border-radius: 5px;
-  background-color: var(--pm-ink);
-}
-
-.tp-heute-band {
-  border-radius: 20px;
-  background: rgba(59, 54, 49, 0.06);
+  background-color: var(--tp-accent);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1053,7 +945,7 @@ main:has(.pm-page) {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14) !important;
   }
   .tp-hover-frei:not(:disabled):hover {
-    background-color: rgba(255, 235, 194, 0.4) !important;
+    background-color: color-mix(in srgb, var(--tp-free-bg) 40%, transparent) !important;
   }
 }
 

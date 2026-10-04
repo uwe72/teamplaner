@@ -3,6 +3,7 @@ import type { MitgliedPlanInfo } from '../../types'
 import { eindeutigeInitialen } from '../../utils/kuerzel'
 import { progressColor } from '../../utils/progress'
 import { sortiereMitglieder } from '../../utils/mitgliederSortierung'
+import { LABELS } from '../../utils/texte'
 import RundAvatar from './RundAvatar'
 import { personFarbe } from '../../utils/farben'
 
@@ -17,11 +18,8 @@ interface PeopleProgressProps {
   verteilen?: boolean
   nameImKreis?: boolean
   horizontal?: boolean
-  papier?: boolean
   onPersonKlick?: (mitglied: MitgliedPlanInfo) => void
 }
-
-export const PM_AVATAR_GROESSE = 50
 
 export default function PeopleProgress({
   mitglieder,
@@ -34,7 +32,6 @@ export default function PeopleProgress({
   verteilen = false,
   nameImKreis = false,
   horizontal = false,
-  papier = false,
   onPersonKlick,
 }: PeopleProgressProps) {
   const sortiert = useMemo(() => sortiereMitglieder(mitglieder), [mitglieder])
@@ -44,35 +41,12 @@ export default function PeopleProgress({
     [sortiert],
   )
 
-  if (papier) {
-    return (
-      <div className="flex w-full" style={{ paddingBottom: 4 }}>
-        <div className="tp-scroll-x" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
-          <div
-            className="flex"
-            style={{ gap, paddingTop: 2, paddingBottom: 8, justifyContent: verteilen ? 'space-around' : undefined, flexWrap: 'wrap' }}
-          >
-            {sortiert.map(m => (
-              <PapierKachel
-                key={m.id}
-                mitglied={m}
-                mitglieder={mitglieder}
-                kuerzel={kuerzel.get(m.anzeigename)}
-                onKlick={onPersonKlick ? () => onPersonKlick(m) : undefined}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex w-full" style={{ padding }}>
-      <div className="tp-scroll-x" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           className="flex"
-          style={{ gap, justifyContent: verteilen ? 'space-around' : undefined }}
+          style={{ gap, justifyContent: verteilen ? 'space-around' : undefined, flexWrap: 'wrap' }}
         >
           {sortiert.map(m => {
             const farbe = progressColor(m.ist, m.soll)
@@ -89,8 +63,8 @@ export default function PeopleProgress({
                   className="flex items-center shrink-0"
                   style={{ gap: 10, cursor: klickbar ? 'pointer' : undefined }}
                   title={kumuliert != null
-                    ? `${m.anzeigename}: ${m.ist} von ${m.soll} erledigt, kumuliert ${kumuliert}%`
-                    : `${m.anzeigename}: ${m.ist} von ${m.soll} erledigt`}
+                    ? `${m.anzeigename}: ${m.ist} von ${m.soll} ${LABELS.unitVonPlural} erledigt, kumuliert ${kumuliert}%`
+                    : `${m.anzeigename}: ${m.ist} von ${m.soll} ${LABELS.unitVonPlural} erledigt`}
                   onClick={klickbar ? () => onPersonKlick?.(m) : undefined}
                   role={klickbar ? 'button' : undefined}
                   tabIndex={klickbar ? 0 : undefined}
@@ -133,7 +107,7 @@ export default function PeopleProgress({
                         kuerzel={kuerzel.get(m.anzeigename)}
                         farbe={personFarbe(m, mitglieder)}
                         fallbackTextGroesse={avatarGroesse * 0.36}
-                        style={{ boxShadow: '0 0 0 2px #fff' }}
+                        style={{ boxShadow: '0 0 0 2px var(--tp-surface)' }}
                       />
                     </span>
                     {fertig && (
@@ -146,7 +120,7 @@ export default function PeopleProgress({
                           right: -2,
                           bottom: -2,
                           backgroundColor: 'var(--tp-prog-done)',
-                          border: '2px solid #fff',
+                          border: '2px solid var(--tp-surface)',
                           boxSizing: 'border-box',
                         }}
                       >
@@ -175,8 +149,8 @@ export default function PeopleProgress({
                 className="flex flex-col items-center gap-[3px] shrink-0"
                 style={{ minWidth: ringGroesse, cursor: klickbar ? 'pointer' : undefined }}
                 title={kumuliert != null
-                  ? `${m.anzeigename}: ${m.ist} von ${m.soll} erledigt, kumuliert ${kumuliert}%`
-                  : `${m.anzeigename}: ${m.ist} von ${m.soll} erledigt`}
+                  ? `${m.anzeigename}: ${m.ist} von ${m.soll} ${LABELS.unitVonPlural} erledigt, kumuliert ${kumuliert}%`
+                  : `${m.anzeigename}: ${m.ist} von ${m.soll} ${LABELS.unitVonPlural} erledigt`}
                 onClick={klickbar ? () => onPersonKlick?.(m) : undefined}
                 role={klickbar ? 'button' : undefined}
                 tabIndex={klickbar ? 0 : undefined}
@@ -208,7 +182,7 @@ export default function PeopleProgress({
                       kuerzel={nameImKreis ? m.anzeigename : kuerzel.get(m.anzeigename)}
                       farbe={personFarbe(m, mitglieder)}
                       fallbackTextGroesse={avatarGroesse * 0.36}
-                      style={{ boxShadow: '0 0 0 2px #fff' }}
+                      style={{ boxShadow: '0 0 0 2px var(--tp-surface)' }}
                     />
                   </span>
                   {fertig && (
@@ -221,7 +195,7 @@ export default function PeopleProgress({
                         right: -2,
                         bottom: -2,
                         backgroundColor: 'var(--tp-prog-done)',
-                        border: '2px solid #fff',
+                        border: '2px solid var(--tp-surface)',
                         boxSizing: 'border-box',
                       }}
                     >
@@ -259,135 +233,6 @@ export default function PeopleProgress({
           })}
         </div>
       </div>
-    </div>
-  )
-}
-
-function PapierKachel({
-  mitglied,
-  mitglieder,
-  kuerzel,
-  onKlick,
-}: {
-  mitglied: MitgliedPlanInfo
-  mitglieder: MitgliedPlanInfo[]
-  kuerzel?: string
-  onKlick?: () => void
-}) {
-  const pausiert = mitglied.soll <= 0
-  const nichts = mitglied.ist === 0 && mitglied.soll > 0
-  const fortschritt = pausiert ? 0 : Math.min(mitglied.ist / mitglied.soll, 1)
-  const grad = fortschritt * 360
-  const farbe = progressColor(mitglied.ist, mitglied.soll)
-  const fertig = !pausiert && mitglied.ist >= mitglied.soll
-  const ueberschritten = !pausiert && mitglied.ist > mitglied.soll
-  const differenz = mitglied.ist - mitglied.soll
-
-  const ring = (
-    <span
-      className="relative shrink-0 rounded-full flex items-center justify-center"
-      style={{
-        width: PM_AVATAR_GROESSE + 10,
-        height: PM_AVATAR_GROESSE + 10,
-        padding: 5,
-        background: farbe
-          ? `conic-gradient(${farbe} ${grad}deg, var(--tp-soft) 0)`
-          : 'var(--tp-soft)',
-      }}
-    >
-      <RundAvatar
-        mitgliedId={mitglied.id}
-        anzeigename={mitglied.anzeigename}
-        avatarUrl={mitglied.avatarUrl}
-        groesse={PM_AVATAR_GROESSE}
-        kuerzel={kuerzel}
-        farbe={personFarbe(mitglied, mitglieder)}
-        style={{ width: PM_AVATAR_GROESSE, height: PM_AVATAR_GROESSE, boxShadow: '0 0 0 2px #fff' }}
-      />
-      {fertig && (
-        <span
-          aria-hidden="true"
-          className="absolute rounded-full flex items-center justify-center"
-          style={{
-            width: 18,
-            height: 18,
-            right: -2,
-            bottom: -2,
-            backgroundColor: 'var(--tp-prog-done)',
-            border: '2px solid #fff',
-            boxSizing: 'border-box',
-          }}
-        >
-          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-            <path d="M2 5.2L4.2 7.4L8 3" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-      )}
-    </span>
-  )
-
-  const inhalt = (
-    <span className="flex items-center" style={{ gap: 10 }}>
-      {ring}
-      <span className="flex flex-col min-w-0" style={{ gap: 2 }}>
-        <span
-          className="min-w-0"
-          style={{ fontSize: 16, fontWeight: 700, color: 'var(--pm-ink)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: 132 }}
-        >
-          {mitglied.anzeigename}
-        </span>
-        {pausiert ? (
-          <span className="whitespace-nowrap tabular-nums" style={{ fontSize: 14, color: 'var(--pm-muted)' }}>
-            {`${mitglied.ist} von ${mitglied.soll}`}
-          </span>
-        ) : (
-          <span className="flex items-center whitespace-nowrap" style={{ gap: 6 }}>
-            <span
-              className="tabular-nums"
-              style={{ fontSize: 14, fontWeight: nichts ? 900 : 700, color: nichts ? 'var(--tp-prog-low)' : 'var(--pm-muted)' }}
-            >
-              {`${mitglied.ist} von ${mitglied.soll}`}
-            </span>
-            {ueberschritten && (
-              <span
-                className="rounded-full tabular-nums"
-                style={{
-                  padding: '1px 6px',
-                  backgroundColor: 'var(--pm-ring-track)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: 'var(--pm-ink)',
-                }}
-              >
-                {`+${differenz}`}
-              </span>
-            )}
-          </span>
-        )}
-      </span>
-    </span>
-  )
-
-  if (onKlick) {
-    return (
-      <button
-        type="button"
-        className="pm-focus-visible flex flex-col items-center shrink-0"
-        style={{ opacity: pausiert ? 0.6 : 1, cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
-        title={`${mitglied.anzeigename}: ${mitglied.ist} von ${mitglied.soll} erledigt`}
-        onClick={onKlick}
-      >
-        {inhalt}
-      </button>
-    )
-  }
-  return (
-    <div
-      className="flex flex-col items-center shrink-0"
-      style={{ opacity: pausiert ? 0.6 : 1 }}
-      title={`${mitglied.anzeigename}: ${mitglied.ist} von ${mitglied.soll} erledigt`}
-    >
-      {inhalt}
     </div>
   )
 }
