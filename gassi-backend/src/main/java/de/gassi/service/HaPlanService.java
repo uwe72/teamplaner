@@ -8,6 +8,7 @@ import de.gassi.domain.Teammitglied;
 import de.gassi.domain.Zuteilung;
 import de.gassi.domain.Zeitfenster;
 import de.gassi.dto.HaPlanDto;
+import de.gassi.dto.StatistikDto;
 import de.gassi.repository.AufgabeRepository;
 import de.gassi.repository.BereichRepository;
 import de.gassi.repository.SollRepository;
@@ -30,8 +31,10 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -41,6 +44,11 @@ public class HaPlanService {
 
     private static final int MAX_KANTE = 128;
     private static final String[] TAG_KURZ = {"Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"};
+    private static final String[] MONATSNAMEN = {
+        "Januar", "Februar", "M\u00e4rz", "April", "Mai", "Juni",
+        "Juli", "August", "September", "Oktober", "November", "Dezember",
+    };
+    private static final java.text.Collator DE = java.text.Collator.getInstance(Locale.GERMAN);
 
     private final BereichRepository bereichRepository;
     private final ZeitfensterRepository zeitfensterRepository;
@@ -49,6 +57,7 @@ public class HaPlanService {
     private final SollRepository sollRepository;
     private final TeammitgliedRepository teammitgliedRepository;
     private final ZeitService zeitService;
+    private final StatistikService statistikService;
 
     @Transactional(readOnly = true)
     public HaPlanDto plan(Long bereichId) {
@@ -79,7 +88,8 @@ public class HaPlanService {
             istProMitglied.merge(z.getMitglied().getId(), 1L, Long::sum);
         }
 
-        List<Teammitglied> mitglieder = teammitgliedRepository.findByTeamIdOrderByIdAsc(team.getId()).stream()
+        List<Teammitglied> alleMitglieder = teammitgliedRepository.findByTeamIdOrderByIdAsc(team.getId());
+        List<Teammitglied> mitglieder = alleMitglieder.stream()
             .filter(Teammitglied::isAktiv)
             .toList();
         Map<String, String> kuerzel = KuerzelUtil.eindeutigeInitialen(
@@ -118,10 +128,40 @@ public class HaPlanService {
                 tag.equals(heute), runden));
         }
 
+        StatistikDto statistikDaten = statistikService.statistikOhneZugriffspruefung(
+            team.getId(), bereichId, null, null, null, null);
+        Map<String, String> kuerzelStatistik = KuerzelUtil.eindeutigeInitialen(
+            alleMitglieder.stream()
+                .map(Teammitglied::getAnzeigename)
+                .toList());
+
+        java.time.YearMonth fokusMonat = java.time.YearMonth.from(heute);
+        String monatsTitel = MONATSNAMEN[fokusMonat.getMonthValue() - 1] + " " + fokusMonat.getYear();
+
         return new HaPlanDto(team.getName(), bereich.getName(), zeitService.isoWoche(heute), von, bis,
             OffsetDateTime.now(ZeitService.ZONE).truncatedTo(ChronoUnit.SECONDS),
             zeitfenster.stream().map(Zeitfenster::getName).toList(),
-            personen, tagListe, offen);
+            personen, tagListe, offen,
+            new HaPlanDto.Statistik(
+                new HaPlanDto.Block("Seit Teamstart", summeVon(statistikDaten.kumuliert()),
+                    personenVon(statistikDaten.kumuliert(), kuerzelStatistik)),
+                new HaPlanDto.Block(monatsTitel, summeVon(statistikDaten.monatlich()),
+                    personenVon(statistikDaten.monatlich(), kuerzelStatistik))));
+    }
+
+    private long summeVon(List<StatistikDto.StatistikZeile> zeilen) {
+        return zeilen.stream().mapToLong(StatistikDto.StatistikZeile::moeglich).max().orElse(0);
+    }
+
+    private List<HaPlanDto.StatistikPerson> personenVon(List<StatistikDto.StatistikZeile> zeilen,
+                                                        Map<String, String> kuerzel) {
+        return zeilen.stream()
+            .map(z -> new HaPlanDto.StatistikPerson(kuerzel.getOrDefault(z.anzeigename(), "?"),
+                z.ist(), z.prozent()))
+            .sorted(Comparator.comparingDouble(HaPlanDto.StatistikPerson::prozent).reversed()
+                .thenComparing(Comparator.comparingLong(HaPlanDto.StatistikPerson::anzahl).reversed())
+                .thenComparing(HaPlanDto.StatistikPerson::kuerzel, DE))
+            .toList();
     }
 
     @Transactional(readOnly = true)

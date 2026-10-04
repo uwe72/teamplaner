@@ -42,7 +42,7 @@ GitHub Action baut auf jedem Push nach `main` ein Docker-Image (`ghcr.io/...:lat
 
 Für die reine Anzeige auf einem Home-Assistant-Dashboard gibt es einen separaten Lese-Endpunkt, der NICHT am App-Login hängt:
 
-- `GET /api/ha/plan/{planId}` — `planId` ist die ID aus der Frontend-Route `/plan/{id}` (Bereich-ID). Liefert immer die aktuelle Woche (Montag–Sonntag, Europe/Berlin): Team, Bereich, Kalenderwoche, Zeitfenster („Slots"), Personen mit Ist/Soll (identisch zum Fortschrittsring in der Wochenansicht), Runden je Tag/Slot mit zugewiesenen Kürzeln sowie die Anzahl offener (freier) Runden ab heute bis Sonntag. Antwort als kompaktes JSON (< 8 KB).
+- `GET /api/ha/plan/{planId}` — `planId` ist die ID aus der Frontend-Route `/plan/{id}` (Bereich-ID). Liefert immer die aktuelle Woche (Montag–Sonntag, Europe/Berlin): Team, Bereich, Kalenderwoche, Zeitfenster („Slots"), Personen mit Ist/Soll (identisch zum Fortschrittsring in der Wochenansicht), Runden je Tag/Slot mit zugewiesenen Kürzeln sowie die Anzahl offener (freier) Runden ab heute bis Sonntag. Zusätzlich `statistik` mit den Werten der Statistikseite (gleiche Berechnung wie `GET /api/teams/{teamId}/statistik`): `gesamt` („Seit Teamstart", kumuliert) und `monat` (aktueller Kalendermonat, Europe/Berlin) mit `titel`, `summe` („von"-Wert, z. B. „8 von 28") und `personen` (alle Teammitglieder, absteigend nach Anzahl, `prozent` auf eine Nachkommastelle; Fotos stehen bereits in `personen` und werden nicht erneut ausgegeben). Antwort als kompaktes JSON (< 8 KB).
 - `GET /api/ha/foto/{personId}?k={token}` — Profilfoto als Vorschaubild (max. 128×128, JPEG; nicht dekodierbare Formate werden unverändert ausgeliefert), `Cache-Control: max-age=86400`.
 
 Absicherung über die Umgebungsvariable `TEAMPLANER_HA_TOKEN`:

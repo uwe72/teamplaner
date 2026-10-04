@@ -4,7 +4,7 @@ import api from '../api/client'
 import { aktivesTeamId } from '../api/client'
 import type { Teammitglied, Rolle } from '../types'
 import { MITGLIED_FARBPALETTE, mitgliedFarbe } from '../utils/farben'
-import { useAvatarFuerMitglied } from '../hooks/useAvatar'
+import { useAvatarFuerMitglied, useAvatar } from '../hooks/useAvatar'
 import Avatar from '../components/Avatar'
 import Button from '../components/Button'
 import Badge from '../components/Badge'
@@ -12,6 +12,7 @@ import FormCard from '../components/FormCard'
 import CardContainer from '../components/CardContainer'
 import { TableContent, TableHead, TableBody, Th } from '../components/Table'
 import { Dialog } from '../components/Dialog'
+import BildOverlay from '../components/BildOverlay'
 import { antwort } from '../utils/fehler'
 import { BereichePanel } from './Bereiche'
 
@@ -284,6 +285,8 @@ function MitgliedBearbeiten({
   const [bildMeldung, setBildMeldung] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const { hochladen, loeschen } = useAvatarFuerMitglied()
+  const { data: bildUrl } = useAvatar(mitglied.id, avatarUrl)
+  const [bildOffen, setBildOffen] = useState(false)
 
   async function bildWaehlen(e: React.ChangeEvent<HTMLInputElement>) {
     const datei = e.target.files?.[0]
@@ -321,12 +324,28 @@ function MitgliedBearbeiten({
       <FormCard className="mb-6">
         <h3 className="text-sm font-semibold text-foreground mb-3">Profilbild</h3>
         <div className="flex items-center gap-4">
-          <Avatar
-            mitgliedId={mitglied.id}
-            anzeigename={mitglied.anzeigename}
-            avatarUrl={avatarUrl}
-            groesse="lg"
-          />
+          {bildUrl ? (
+            <button
+              type="button"
+              onClick={() => setBildOffen(true)}
+              className="shrink-0 rounded-full cursor-pointer transition-transform hover:scale-105"
+              title="Bild in voller Größe anzeigen"
+            >
+              <Avatar
+                mitgliedId={mitglied.id}
+                anzeigename={mitglied.anzeigename}
+                avatarUrl={avatarUrl}
+                groesse="lg"
+              />
+            </button>
+          ) : (
+            <Avatar
+              mitgliedId={mitglied.id}
+              anzeigename={mitglied.anzeigename}
+              avatarUrl={avatarUrl}
+              groesse="lg"
+            />
+          )}
           <div className="flex flex-col gap-2">
             <div className="flex gap-3">
               <Button variant="secondary" size="compact" disabled={hochladen.isPending || loeschen.isPending} onClick={() => avatarInputRef.current?.click()}>
@@ -353,6 +372,13 @@ function MitgliedBearbeiten({
           onChange={bildWaehlen}
         />
       </FormCard>
+      {bildOffen && bildUrl && (
+        <BildOverlay
+          bildUrl={bildUrl}
+          titel={mitglied.anzeigename}
+          onClose={() => setBildOffen(false)}
+        />
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="block text-sm text-muted mb-1">Anzeigename <span className="text-muted">*</span></label>

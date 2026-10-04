@@ -14,7 +14,8 @@ public record HaPlanDto(
     List<String> slots,
     List<Person> personen,
     List<Tag> tage,
-    int offen
+    int offen,
+    Statistik statistik
 ) {
 
     public record Person(
@@ -23,6 +24,26 @@ public record HaPlanDto(
         String foto,
         int ist,
         int soll
+    ) {
+    }
+
+    public record Statistik(
+        Block gesamt,
+        Block monat
+    ) {
+    }
+
+    public record Block(
+        String titel,
+        long summe,
+        List<StatistikPerson> personen
+    ) {
+    }
+
+    public record StatistikPerson(
+        String kuerzel,
+        long anzahl,
+        double prozent
     ) {
     }
 

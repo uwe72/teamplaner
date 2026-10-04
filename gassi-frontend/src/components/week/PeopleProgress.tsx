@@ -337,7 +337,9 @@ function PapierKachel({
           {mitglied.anzeigename}
         </span>
         {pausiert ? (
-          <span className="whitespace-nowrap tabular-nums" style={{ fontSize: 14, color: 'var(--pm-muted)' }}>pausiert</span>
+          <span className="whitespace-nowrap tabular-nums" style={{ fontSize: 14, color: 'var(--pm-muted)' }}>
+            {`${mitglied.ist} von ${mitglied.soll}`}
+          </span>
         ) : (
           <span className="flex items-center whitespace-nowrap" style={{ gap: 6 }}>
             <span
