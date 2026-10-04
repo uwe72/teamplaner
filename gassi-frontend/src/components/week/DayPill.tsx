@@ -11,7 +11,6 @@ export default function DayPill({
 }) {
   const wochentag = wochentagKurz(datum)
   const tag = tagKurz(datum)
-  const wochenende = new Date(datum + 'T12:00:00').getDay() === 0 || new Date(datum + 'T12:00:00').getDay() === 6
 
   if (varianz === 'horizontal') {
     const vergangen = datum < heutigesDatum()
@@ -22,8 +21,6 @@ export default function DayPill({
       hintergrund = 'var(--tp-accent)'
       textfarbe = 'var(--tp-on-accent)'
       schatten = '0 4px 12px rgba(0,0,0,.15)'
-    } else if (wochenende) {
-      hintergrund = 'var(--tp-weekend)'
     }
     return (
       <div
@@ -52,8 +49,6 @@ export default function DayPill({
     hintergrund = 'var(--tp-accent)'
     textfarbe = 'var(--tp-on-accent)'
     schatten = '0 4px 12px rgba(0,0,0,.15)'
-  } else if (wochenende) {
-    hintergrund = 'var(--tp-weekend)'
   }
 
   return (

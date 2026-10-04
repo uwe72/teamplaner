@@ -13,7 +13,7 @@
 
     <groupId>de.gassi</groupId>
     <artifactId>gassi-backend</artifactId>
-    <version>1.0.26</version>
+    <version>1.0.27</version>
     <name>Teamplaner Backend</name>
     <description>Teamplaner Backend — Wer macht was?</description>
 
