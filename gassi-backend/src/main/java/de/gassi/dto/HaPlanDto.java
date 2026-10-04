@@ -29,7 +29,7 @@ public record HaPlanDto(
 
     public record Statistik(
         Block gesamt,
-        Block monat
+        Block zielerreichung
     ) {
     }
 

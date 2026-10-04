@@ -307,19 +307,15 @@ public class HaPlanTest extends AbstractIntegrationTest {
             ? Math.round(100.0 * anzahlGesamt / gesamtSumme * 10.0) / 10.0
             : 0.0;
 
-        long monatSumme;
-        int anzahlMonat;
-        double prozentMonat;
-        if (ersterMontag.isAfter(gestern)) {
-            monatSumme = 0;
-            anzahlMonat = 0;
-            prozentMonat = 0.0;
-        } else {
-            monatSumme = gestern.getDayOfMonth() * aufkommenProTag;
-            boolean gesternImMonat = java.time.YearMonth.from(gestern).equals(java.time.YearMonth.from(heute));
-            anzahlMonat = gesternImMonat ? 1 : 0;
-            prozentMonat = Math.round(100.0 * anzahlMonat / monatSumme * 10.0) / 10.0;
-        }
+        long zieleSumme;
+        int anzahlZiele;
+        double prozentZiele;
+        long sollProWoche = 10;
+        zieleSumme = gesternAbTeamstart ? sollProWoche : 0;
+        anzahlZiele = gesternAbTeamstart ? 1 : 0;
+        prozentZiele = zieleSumme > 0
+            ? Math.round(100.0 * anzahlZiele / zieleSumme * 10.0) / 10.0
+            : 0.0;
 
         MvcResult result = mvc.perform(get("/api/ha/plan/%d".formatted(daten.get("bereichId").asLong()))
                 .header("X-HA-Token", TOKEN))
@@ -339,29 +335,22 @@ public class HaPlanTest extends AbstractIntegrationTest {
         assertThat(gesamtPersonen.get(1).get("anzahl").asLong()).isZero();
         assertThat(gesamtPersonen.get(1).get("prozent").asDouble()).isZero();
 
-        JsonNode monat = statistik.get("monat");
-        assertThat(monat.get("titel").asText()).isEqualTo(monatsTitelDeutsch(heute));
-        assertThat(monat.get("summe").asLong()).isEqualTo(monatSumme);
+        JsonNode ziele = statistik.get("zielerreichung");
+        assertThat(ziele.get("titel").asText()).isEqualTo("Zielerreichung");
+        assertThat(ziele.get("summe").asLong()).isEqualTo(zieleSumme);
 
-        JsonNode monatPersonen = monat.get("personen");
-        assertThat(monatPersonen).hasSize(2);
-        assertThat(monatPersonen.get(0).get("kuerzel").asText()).isEqualTo("AN");
-        assertThat(monatPersonen.get(0).get("anzahl").asLong()).isEqualTo(anzahlMonat);
-        assertThat(monatPersonen.get(0).get("prozent").asDouble()).isEqualTo(prozentMonat);
-        assertThat(monatPersonen.get(1).get("anzahl").asLong()).isZero();
+        JsonNode zielePersonen = ziele.get("personen");
+        assertThat(zielePersonen).hasSize(1);
+        assertThat(zielePersonen.get(0).get("kuerzel").asText()).isEqualTo("AN");
+        assertThat(zielePersonen.get(0).get("anzahl").asLong()).isEqualTo(anzahlZiele);
+        assertThat(zielePersonen.get(0).get("prozent").asDouble()).isEqualTo(prozentZiele);
 
-        for (JsonNode block : new JsonNode[]{gesamt, monat}) {
+        for (JsonNode block : new JsonNode[]{gesamt, ziele}) {
             for (JsonNode person : block.get("personen")) {
                 assertThat(person.has("foto")).isFalse();
                 assertThat(person.has("name")).isFalse();
             }
         }
-    }
-
-    private String monatsTitelDeutsch(LocalDate datum) {
-        String[] monatsnamen = {"Januar", "Februar", "März", "April", "Mai", "Juni",
-            "Juli", "August", "September", "Oktober", "November", "Dezember"};
-        return monatsnamen[datum.getMonthValue() - 1] + " " + datum.getYear();
     }
 
     private JsonNode findePerson(JsonNode plan, String name) {

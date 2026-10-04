@@ -6,8 +6,8 @@ public record StatistikDto(
     Long bereichId,
     String bereichName,
     List<StatistikZeile> wochenweise,
-    List<StatistikZeile> monatlich,
-    List<StatistikZeile> kumuliert
+    List<StatistikZeile> kumuliert,
+    List<StatistikZeile> zielerreichung
 ) {
 
     public record StatistikZeile(

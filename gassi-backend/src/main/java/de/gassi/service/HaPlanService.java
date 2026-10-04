@@ -44,10 +44,6 @@ public class HaPlanService {
 
     private static final int MAX_KANTE = 128;
     private static final String[] TAG_KURZ = {"Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"};
-    private static final String[] MONATSNAMEN = {
-        "Januar", "Februar", "M\u00e4rz", "April", "Mai", "Juni",
-        "Juli", "August", "September", "Oktober", "November", "Dezember",
-    };
     private static final java.text.Collator DE = java.text.Collator.getInstance(Locale.GERMAN);
 
     private final BereichRepository bereichRepository;
@@ -129,14 +125,11 @@ public class HaPlanService {
         }
 
         StatistikDto statistikDaten = statistikService.statistikOhneZugriffspruefung(
-            team.getId(), bereichId, null, null, null, null);
+            team.getId(), bereichId, null, null);
         Map<String, String> kuerzelStatistik = KuerzelUtil.eindeutigeInitialen(
             alleMitglieder.stream()
                 .map(Teammitglied::getAnzeigename)
                 .toList());
-
-        java.time.YearMonth fokusMonat = java.time.YearMonth.from(heute);
-        String monatsTitel = MONATSNAMEN[fokusMonat.getMonthValue() - 1] + " " + fokusMonat.getYear();
 
         return new HaPlanDto(team.getName(), bereich.getName(), zeitService.isoWoche(heute), von, bis,
             OffsetDateTime.now(ZeitService.ZONE).truncatedTo(ChronoUnit.SECONDS),
@@ -145,8 +138,8 @@ public class HaPlanService {
             new HaPlanDto.Statistik(
                 new HaPlanDto.Block("Seit Teamstart", summeVon(statistikDaten.kumuliert()),
                     personenVon(statistikDaten.kumuliert(), kuerzelStatistik)),
-                new HaPlanDto.Block(monatsTitel, summeVon(statistikDaten.monatlich()),
-                    personenVon(statistikDaten.monatlich(), kuerzelStatistik))));
+                new HaPlanDto.Block("Zielerreichung", summeVon(statistikDaten.zielerreichung()),
+                    personenVon(statistikDaten.zielerreichung(), kuerzelStatistik))));
     }
 
     private long summeVon(List<StatistikDto.StatistikZeile> zeilen) {

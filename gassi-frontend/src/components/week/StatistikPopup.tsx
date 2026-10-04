@@ -10,7 +10,7 @@ export default function StatistikPopup({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
       <div
-        className="p-5 bg-card border border-border rounded-card shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto"
+        className="p-5 bg-card border border-border rounded-card shadow-2xl w-full max-w-[640px] max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-end mb-3">
@@ -25,7 +25,7 @@ export default function StatistikPopup({
             ✕
           </button>
         </div>
-        <StatistikInhalt bereichId={bereichId} />
+        <StatistikInhalt bereichId={bereichId} nebeneinander gestapelt />
       </div>
     </div>
   )

@@ -25,7 +25,6 @@ export function prozentAusZuteilungen(
 
   personProzente.sort((a, b) =>
     b.prozent - a.prozent
-    || b.ist - a.ist
     || a.anzeigename.localeCompare(b.anzeigename, 'de'),
   )
 

@@ -113,8 +113,8 @@ export interface Statistik {
   bereichId: number
   bereichName: string
   wochenweise: StatistikZeile[]
-  monatlich: StatistikZeile[]
   kumuliert: StatistikZeile[]
+  zielerreichung: StatistikZeile[]
 }
 
 export interface BesuchMitglied {

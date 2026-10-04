@@ -197,9 +197,7 @@ public class TeamController {
     @GetMapping("/statistik")
     public StatistikDto statistik(@PathVariable Long teamId, @RequestParam Long bereichId,
                                   @RequestParam(required = false) Integer isoJahr,
-                                  @RequestParam(required = false) Integer isoWoche,
-                                  @RequestParam(required = false) Integer jahr,
-                                  @RequestParam(required = false) Integer monat) {
-        return statistikService.statistik(teamId, bereichId, isoJahr, isoWoche, jahr, monat);
+                                  @RequestParam(required = false) Integer isoWoche) {
+        return statistikService.statistik(teamId, bereichId, isoJahr, isoWoche);
     }
 }
