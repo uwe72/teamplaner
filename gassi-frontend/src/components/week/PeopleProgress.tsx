@@ -72,8 +72,8 @@ export default function PeopleProgress({
     <div className="flex w-full" style={{ padding }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
-          className="flex"
-          style={{ gap, justifyContent: verteilen ? 'space-around' : undefined, flexWrap: 'wrap' }}
+          className="flex tp-scroll-x"
+          style={{ gap, justifyContent: verteilen ? 'space-around' : undefined }}
         >
           {sortiert.map(m => {
             const farbe = progressColor(m.ist, m.soll)

@@ -332,12 +332,14 @@ export default function Plan() {
                 onStatistik={() => setStatistikOffen(true)}
                 className="mx-4 mt-3"
               />
-              <PeopleProgress
-                mitglieder={planAbfrage.data.mitglieder}
-                kumuliertProzent={Object.fromEntries(
-                  (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
-                )}
-              />
+              {planAbfrage.data.mitglieder.some(m => m.soll > 0) && (
+                <PeopleProgress
+                  mitglieder={planAbfrage.data.mitglieder.filter(m => m.soll > 0)}
+                  kumuliertProzent={Object.fromEntries(
+                    (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
+                  )}
+                />
+              )}
               <WeekRaster
                 plan={planAbfrage.data}
                 spalten={mobilerSpalten(planAbfrage.data)}
