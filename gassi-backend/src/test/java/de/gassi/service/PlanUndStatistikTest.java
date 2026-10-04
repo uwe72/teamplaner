@@ -155,15 +155,16 @@ public class PlanUndStatistikTest extends AbstractIntegrationTest {
     void statistikProWocheUndKumuliert() throws Exception {
         aufbau();
         LocalDate heute = LocalDate.now(ZoneId.of("Europe/Berlin"));
-        int isoJahr = heute.get(WeekFields.ISO.weekBasedYear());
-        int isoWoche = heute.get(WeekFields.ISO.weekOfWeekBasedYear());
+        LocalDate gestern = heute.minusDays(1);
+        int isoJahr = gestern.get(WeekFields.ISO.weekBasedYear());
+        int isoWoche = gestern.get(WeekFields.ISO.weekOfWeekBasedYear());
 
         Long zfw = zeitfensterAnlegen("Morgens");
         Long taeglich = aufgabeAnlegen(zfw, "Gassi Blue");
         mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, heute, mitgliedId)))
+                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, gestern, mitgliedId)))
             .andExpect(status().isCreated());
 
         MvcResult statistik = mvc.perform(get("/api/teams/%d/statistik".formatted(teamId))
@@ -197,25 +198,31 @@ public class PlanUndStatistikTest extends AbstractIntegrationTest {
             }
         }
         assertThat(annaKumuliert).isNotNull();
-        assertThat(annaKumuliert.get("ist").asLong()).isEqualTo(1);
-        assertThat(annaKumuliert.get("moeglich").asLong()).isEqualTo(7);
+        LocalDate ersterMontag = heute.with(java.time.DayOfWeek.MONDAY);
+        long abgelaufeneTageAktuelleWoche = gestern.isBefore(ersterMontag)
+            ? 0
+            : java.time.temporal.ChronoUnit.DAYS.between(ersterMontag, gestern) + 1;
+        assertThat(annaKumuliert.get("ist").asLong())
+            .isEqualTo(gestern.isBefore(ersterMontag) ? 0 : 1);
+        assertThat(annaKumuliert.get("moeglich").asLong()).isEqualTo(abgelaufeneTageAktuelleWoche);
     }
 
     @Test
     void statistikMonatlichZaehltNurAktuellenMonat() throws Exception {
         aufbau();
         LocalDate heute = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate gestern = heute.minusDays(1);
 
         Long zfw = zeitfensterAnlegen("Morgens");
         Long taeglich = aufgabeAnlegen(zfw, "Gassi Blue");
         mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, heute, mitgliedId)))
+                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, gestern, mitgliedId)))
             .andExpect(status().isCreated());
 
         LocalDate ersterMonatstag = heute.withDayOfMonth(1);
-        if (ersterMonatstag.isBefore(heute)) {
+        if (ersterMonatstag.isBefore(gestern)) {
             mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
                     .header("Authorization", "Bearer " + adminToken)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -236,13 +243,16 @@ public class PlanUndStatistikTest extends AbstractIntegrationTest {
             }
         }
         assertThat(annaMonat).isNotNull();
-        long erwarteteZuteilungen = ersterMonatstag.isBefore(heute) ? 2 : 1;
-        if (ersterMonatstag.isEqual(heute)) {
-            erwarteteZuteilungen = 1;
-        }
-        assertThat(annaMonat.get("ist").asLong()).isEqualTo(erwarteteZuteilungen);
         long aufkommenProTag = Math.round(7 / 7.0);
-        assertThat(annaMonat.get("moeglich").asLong()).isEqualTo(heute.getDayOfMonth() * aufkommenProTag);
+        if (!ersterMonatstag.isEqual(gestern) && ersterMonatstag.isBefore(gestern)) {
+            assertThat(annaMonat.get("ist").asLong()).isEqualTo(2);
+        } else if (ersterMonatstag.isEqual(gestern)) {
+            assertThat(annaMonat.get("ist").asLong()).isEqualTo(1);
+        } else {
+            assertThat(annaMonat.get("ist").asLong()).isEqualTo(0);
+        }
+        long moeglich = ersterMonatstag.isAfter(gestern) ? 0 : gestern.getDayOfMonth() * aufkommenProTag;
+        assertThat(annaMonat.get("moeglich").asLong()).isEqualTo(moeglich);
     }
 
     @Test
@@ -285,6 +295,85 @@ public class PlanUndStatistikTest extends AbstractIntegrationTest {
                 .header("Authorization", "Bearer " + adminToken))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("MONAT_UNGUELTIG"));
+    }
+
+    @Test
+    void statistikIgnoriertZukunftszuteilungen() throws Exception {
+        aufbau();
+        LocalDate heute = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate gestern = heute.minusDays(1);
+        LocalDate morgen = heute.plusDays(1);
+        int isoJahr = gestern.get(WeekFields.ISO.weekBasedYear());
+        int isoWoche = gestern.get(WeekFields.ISO.weekOfWeekBasedYear());
+        int isoJahrZukunft = morgen.get(WeekFields.ISO.weekBasedYear());
+        int isoWocheZukunft = morgen.get(WeekFields.ISO.weekOfWeekBasedYear());
+
+        Long zfw = zeitfensterAnlegen("Morgens");
+        Long taeglich = aufgabeAnlegen(zfw, "Gassi Blue");
+        mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, gestern, mitgliedId)))
+            .andExpect(status().isCreated());
+        mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}".formatted(taeglich, morgen, mitgliedId)))
+            .andExpect(status().isCreated());
+
+        boolean gleicheWoche = isoJahr == isoJahrZukunft && isoWoche == isoWocheZukunft;
+
+        MvcResult statistikGesamt = mvc.perform(get("/api/teams/%d/statistik".formatted(teamId))
+                .param("bereichId", String.valueOf(bereichId))
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andReturn();
+        JsonNode gesamtJson = om.readTree(statistikGesamt.getResponse().getContentAsString());
+
+        JsonNode annaKumuliert = zeileFuerMitglied(gesamtJson.get("kumuliert"), mitgliedId);
+        assertThat(annaKumuliert).isNotNull();
+        LocalDate ersterMontag = heute.with(java.time.DayOfWeek.MONDAY);
+        boolean gesternAbTeamstart = !gestern.isBefore(ersterMontag);
+        long abgelaufeneTage = gesternAbTeamstart
+            ? java.time.temporal.ChronoUnit.DAYS.between(ersterMontag, gestern) + 1
+            : 0;
+        assertThat(annaKumuliert.get("ist").asLong()).isEqualTo(gesternAbTeamstart ? 1 : 0);
+        assertThat(annaKumuliert.get("moeglich").asLong()).isEqualTo(abgelaufeneTage);
+
+        JsonNode annaMonat = zeileFuerMitglied(gesamtJson.get("monatlich"), mitgliedId);
+        assertThat(annaMonat).isNotNull();
+        LocalDate ersterMonatstag = heute.withDayOfMonth(1);
+        if (ersterMonatstag.isAfter(gestern)) {
+            assertThat(annaMonat.get("ist").asLong()).isEqualTo(0);
+            assertThat(annaMonat.get("moeglich").asLong()).isEqualTo(0);
+        } else {
+            assertThat(annaMonat.get("ist").asLong()).isEqualTo(1);
+            assertThat(annaMonat.get("moeglich").asLong()).isEqualTo(gestern.getDayOfMonth());
+        }
+
+        if (gleicheWoche) {
+            MvcResult statistikWoche = mvc.perform(get("/api/teams/%d/statistik".formatted(teamId))
+                    .param("bereichId", String.valueOf(bereichId))
+                    .param("isoJahr", String.valueOf(isoJahrZukunft))
+                    .param("isoWoche", String.valueOf(isoWocheZukunft))
+                    .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+            JsonNode wochenJson = om.readTree(statistikWoche.getResponse().getContentAsString());
+            JsonNode annaWoche = zeileFuerMitglied(wochenJson.get("wochenweise"), mitgliedId);
+            assertThat(annaWoche).isNotNull();
+            assertThat(annaWoche.get("ist").asLong()).isEqualTo(1);
+            assertThat(annaWoche.get("moeglich").asLong()).isEqualTo(7);
+        }
+    }
+
+    private JsonNode zeileFuerMitglied(JsonNode zeilen, long mitgliedId) {
+        for (JsonNode zeile : zeilen) {
+            if (zeile.get("mitgliedId").asLong() == mitgliedId) {
+                return zeile;
+            }
+        }
+        return null;
     }
 
     @Test

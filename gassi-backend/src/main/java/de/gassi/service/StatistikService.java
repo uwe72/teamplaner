@@ -33,6 +33,12 @@ public class StatistikService {
     public StatistikDto statistik(Long teamId, Long bereichId, Integer isoJahr, Integer isoWoche,
                                   Integer monatJahr, Integer monat) {
         zugriffsPruefer.pruefeZugriff(teamId);
+        return statistikOhneZugriffspruefung(teamId, bereichId, isoJahr, isoWoche, monatJahr, monat);
+    }
+
+    @Transactional(readOnly = true)
+    public StatistikDto statistikOhneZugriffspruefung(Long teamId, Long bereichId, Integer isoJahr, Integer isoWoche,
+                                                      Integer monatJahr, Integer monat) {
         if (monat != null && (monat < 1 || monat > 12)) {
             throw new BusinessFehler("MONAT_UNGUELTIG", "Ungültiger Monat.");
         }
@@ -47,14 +53,17 @@ public class StatistikService {
 
         LocalDate heute = zeitService.heute();
         LocalDate montagAktuell = montagDerWoche(heute);
+        LocalDate gestern = heute.minusDays(1);
 
         List<StatistikDto.StatistikZeile> wochenweise;
         if (isoJahr != null && isoWoche != null) {
             LocalDate montag = zeitService.montagVon(isoJahr, isoWoche);
             LocalDate sonntag = montag.plusDays(6);
+            LocalDate zaehlBis = sonntag.isBefore(gestern) ? sonntag : gestern;
             wochenweise = mitglieder.stream()
                 .map(m -> {
-                    long ist = zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, montag, sonntag);
+                    long ist = zaehlBis.isBefore(montag) ? 0
+                        : zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, montag, zaehlBis);
                     return zeile(m, ist, aufkommenProWoche);
                 })
                 .toList();
@@ -67,11 +76,17 @@ public class StatistikService {
 
         LocalDate ersterMontag = montagDerWoche(team.getErstelltAm().toLocalDate());
         LocalDate letzterSonntag = montagAktuell.plusDays(6);
+        long abgelaufeneTageAktuelleWoche = gestern.isBefore(montagAktuell)
+            ? 0
+            : java.time.temporal.ChronoUnit.DAYS.between(montagAktuell, gestern) + 1;
+        long aufkommenProTag = Math.round(aufkommenProWoche / 7.0);
         List<StatistikDto.StatistikZeile> kumuliert = mitglieder.stream()
             .map(m -> {
-                long ist = zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, ersterMontag, letzterSonntag);
-                long wochenAnzahl = zeitService.wochenZwischen(ersterMontag, montagAktuell) + 1;
-                long moeglich = wochenAnzahl * aufkommenProWoche;
+                LocalDate zaehlBis = letzterSonntag.isBefore(gestern) ? letzterSonntag : gestern;
+                long ist = zaehlBis.isBefore(ersterMontag) ? 0
+                    : zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, ersterMontag, zaehlBis);
+                long wochenAnzahl = zeitService.wochenZwischen(ersterMontag, montagAktuell);
+                long moeglich = wochenAnzahl * aufkommenProWoche + abgelaufeneTageAktuelleWoche * aufkommenProTag;
                 return zeile(m, ist, moeglich);
             })
             .toList();
@@ -84,13 +99,16 @@ public class StatistikService {
             : java.time.YearMonth.from(heute);
         ersterMonatstag = fokusMonat.atDay(1);
         letzterMonatstag = fokusMonat.atEndOfMonth();
-        tageMassgeblich = fokusMonat.equals(java.time.YearMonth.from(heute))
-            ? heute.getDayOfMonth()
-            : fokusMonat.lengthOfMonth();
-        long aufkommenProTag = Math.round(aufkommenProWoche / 7.0);
+        if (fokusMonat.equals(java.time.YearMonth.from(heute))) {
+            tageMassgeblich = fokusMonat.atDay(1).isAfter(gestern) ? 0 : gestern.getDayOfMonth();
+        } else {
+            tageMassgeblich = fokusMonat.lengthOfMonth();
+        }
+        LocalDate monatsZaehlBis = letzterMonatstag.isBefore(gestern) ? letzterMonatstag : gestern;
         List<StatistikDto.StatistikZeile> monatlich = mitglieder.stream()
             .map(m -> {
-                long ist = zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, ersterMonatstag, letzterMonatstag);
+                long ist = monatsZaehlBis.isBefore(ersterMonatstag) ? 0
+                    : zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, ersterMonatstag, monatsZaehlBis);
                 long moeglich = tageMassgeblich * aufkommenProTag;
                 return zeile(m, ist, moeglich);
             })
