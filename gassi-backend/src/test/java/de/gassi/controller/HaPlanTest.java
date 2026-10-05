@@ -329,11 +329,20 @@ public class HaPlanTest extends AbstractIntegrationTest {
 
         JsonNode gesamtPersonen = gesamt.get("personen");
         assertThat(gesamtPersonen).hasSize(2);
-        assertThat(gesamtPersonen.get(0).get("kuerzel").asText()).isEqualTo("AN");
-        assertThat(gesamtPersonen.get(0).get("anzahl").asLong()).isEqualTo(anzahlGesamt);
-        assertThat(gesamtPersonen.get(0).get("prozent").asDouble()).isEqualTo(prozentGesamt);
-        assertThat(gesamtPersonen.get(1).get("anzahl").asLong()).isZero();
-        assertThat(gesamtPersonen.get(1).get("prozent").asDouble()).isZero();
+        if (gesternAbTeamstart) {
+            assertThat(gesamtPersonen.get(0).get("kuerzel").asText()).isEqualTo("AN");
+            assertThat(gesamtPersonen.get(0).get("anzahl").asLong()).isEqualTo(anzahlGesamt);
+            assertThat(gesamtPersonen.get(0).get("prozent").asDouble()).isEqualTo(prozentGesamt);
+            assertThat(gesamtPersonen.get(1).get("anzahl").asLong()).isZero();
+            assertThat(gesamtPersonen.get(1).get("prozent").asDouble()).isZero();
+        } else {
+            assertThat(gesamtPersonen.get(0).get("kuerzel").asText()).isEqualTo("AD");
+            assertThat(gesamtPersonen.get(0).get("anzahl").asLong()).isZero();
+            assertThat(gesamtPersonen.get(0).get("prozent").asDouble()).isZero();
+            assertThat(gesamtPersonen.get(1).get("kuerzel").asText()).isEqualTo("AN");
+            assertThat(gesamtPersonen.get(1).get("anzahl").asLong()).isZero();
+            assertThat(gesamtPersonen.get(1).get("prozent").asDouble()).isZero();
+        }
 
         JsonNode ziele = statistik.get("zielerreichung");
         assertThat(ziele.get("titel").asText()).isEqualTo("Zielerreichung");
@@ -344,7 +353,6 @@ public class HaPlanTest extends AbstractIntegrationTest {
         assertThat(zielePersonen.get(0).get("kuerzel").asText()).isEqualTo("AN");
         assertThat(zielePersonen.get(0).get("anzahl").asLong()).isEqualTo(anzahlZiele);
         assertThat(zielePersonen.get(0).get("prozent").asDouble()).isEqualTo(prozentZiele);
-
         for (JsonNode block : new JsonNode[]{gesamt, ziele}) {
             for (JsonNode person : block.get("personen")) {
                 assertThat(person.has("foto")).isFalse();
