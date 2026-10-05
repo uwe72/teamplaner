@@ -3,12 +3,11 @@ package de.gassi.controller;
 import de.gassi.AbstractIntegrationTest;
 import de.gassi.repository.BesuchLogRepository;
 import de.gassi.repository.TeammitgliedRepository;
+import de.gassi.service.ZeitService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
-
-import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,6 +21,8 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
     private BesuchLogRepository besuchLogRepository;
     @Autowired
     private TeammitgliedRepository teammitgliedRepository;
+    @Autowired
+    private ZeitService zeitService;
 
     private String superToken;
     private String adminToken;
@@ -69,8 +70,8 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
         assertThat(teammitgliedRepository.findById(mitgliedId).orElseThrow().getBesuchAnzahl()).isEqualTo(1);
 
         MvcResult statistik = mvc.perform(get("/api/teams/%d/statistik/besuche".formatted(teamId))
-                .param("von", LocalDate.now().withDayOfMonth(1).toString())
-                .param("bis", LocalDate.now().plusDays(1).toString())
+                .param("von", zeitService.heute().withDayOfMonth(1).toString())
+                .param("bis", zeitService.heute().plusDays(1).toString())
                 .header("Authorization", "Bearer " + adminToken))
             .andExpect(status().isOk())
             .andReturn();
@@ -97,8 +98,8 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
         String token = mitgliedToken();
 
         mvc.perform(get("/api/teams/%d/statistik/besuche".formatted(teamId))
-                .param("von", LocalDate.now().withDayOfMonth(1).toString())
-                .param("bis", LocalDate.now().plusDays(1).toString())
+                .param("von", zeitService.heute().withDayOfMonth(1).toString())
+                .param("bis", zeitService.heute().plusDays(1).toString())
                 .header("Authorization", "Bearer " + token))
             .andExpect(status().isForbidden())
             .andExpect(jsonPath("$.code").value("KEINE_BERECHTIGUNG"));
@@ -121,8 +122,8 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
             .andExpect(jsonPath("$.code").value("KEIN_TEAMZUGRIFF"));
 
         mvc.perform(get("/api/teams/%d/statistik/besuche".formatted(teamId))
-                .param("von", LocalDate.now().withDayOfMonth(1).toString())
-                .param("bis", LocalDate.now().plusDays(1).toString())
+                .param("von", zeitService.heute().withDayOfMonth(1).toString())
+                .param("bis", zeitService.heute().plusDays(1).toString())
                 .header("Authorization", "Bearer " + adminB))
             .andExpect(status().isForbidden());
     }
@@ -135,8 +136,8 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
             .andExpect(status().isUnauthorized());
 
         mvc.perform(get("/api/teams/%d/statistik/besuche".formatted(teamId))
-                .param("von", LocalDate.now().withDayOfMonth(1).toString())
-                .param("bis", LocalDate.now().plusDays(1).toString()))
+                .param("von", zeitService.heute().withDayOfMonth(1).toString())
+                .param("bis", zeitService.heute().plusDays(1).toString()))
             .andExpect(status().isUnauthorized());
     }
 
@@ -182,7 +183,7 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
         var buckets = verlauf.get("bucketListe");
         assertThat(buckets.size()).isEqualTo(60);
         var letzter = buckets.get(buckets.size() - 1);
-        assertThat(letzter.get("periodenStart").asText()).isEqualTo(LocalDate.now().toString());
+        assertThat(letzter.get("periodenStart").asText()).isEqualTo(zeitService.heute().toString());
         assertThat(letzter.get("besuche").asLong()).isEqualTo(1);
         assertThat(letzter.get("verschiedeneMitglieder").asLong()).isEqualTo(1);
     }
@@ -202,8 +203,8 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
             .andExpect(status().isNoContent());
 
         MvcResult statistik = mvc.perform(get("/api/super/besuche")
-                .param("von", LocalDate.now().withDayOfMonth(1).toString())
-                .param("bis", LocalDate.now().plusDays(1).toString())
+                .param("von", zeitService.heute().withDayOfMonth(1).toString())
+                .param("bis", zeitService.heute().plusDays(1).toString())
                 .header("Authorization", "Bearer " + superToken))
             .andExpect(status().isOk())
             .andReturn();
@@ -218,8 +219,8 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
             .contains("Team-B-");
 
         MvcResult teams = mvc.perform(get("/api/super/besuche/teams")
-                .param("von", LocalDate.now().withDayOfMonth(1).toString())
-                .param("bis", LocalDate.now().plusDays(1).toString())
+                .param("von", zeitService.heute().withDayOfMonth(1).toString())
+                .param("bis", zeitService.heute().plusDays(1).toString())
                 .header("Authorization", "Bearer " + superToken))
             .andExpect(status().isOk())
             .andReturn();
@@ -245,14 +246,14 @@ public class BesuchStatistikTest extends AbstractIntegrationTest {
         aufbau();
 
         mvc.perform(get("/api/super/besuche")
-                .param("von", LocalDate.now().withDayOfMonth(1).toString())
-                .param("bis", LocalDate.now().plusDays(1).toString())
+                .param("von", zeitService.heute().withDayOfMonth(1).toString())
+                .param("bis", zeitService.heute().plusDays(1).toString())
                 .header("Authorization", "Bearer " + adminToken))
             .andExpect(status().isForbidden());
 
         mvc.perform(get("/api/super/besuche/teams")
-                .param("von", LocalDate.now().withDayOfMonth(1).toString())
-                .param("bis", LocalDate.now().plusDays(1).toString()))
+                .param("von", zeitService.heute().withDayOfMonth(1).toString())
+                .param("bis", zeitService.heute().plusDays(1).toString()))
             .andExpect(status().isUnauthorized());
 
         mvc.perform(get("/api/super/besuche")
