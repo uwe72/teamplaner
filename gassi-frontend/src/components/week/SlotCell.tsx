@@ -309,7 +309,7 @@ export default function SlotCell({
                     className="absolute rounded-full"
                     style={{
                       bottom: 2,
-                      ...(idx === 0 ? { left: -10 } : { right: -10 }),
+                      ...(idx === 0 ? { left: -24 } : { right: -24 }),
                       backgroundColor: badgeFarbe ?? 'var(--tp-ink)',
                       color: '#fff',
                       fontSize: 9,
