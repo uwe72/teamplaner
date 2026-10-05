@@ -85,6 +85,8 @@ function ZellenSlot({
   const gruppe = plan.gruppen.find(g => g.zeitfensterId === spalte.zeitfensterId)
   if (!gruppe || gruppe.zeilen.length === 0) return <div />
 
+  const aufgabenNamen = new Map(gruppe.zeilen.map(zeile => [zeile.aufgabe.id, zeile.aufgabe.name]))
+
   if (gruppe.zeilen.length === 1 && spalte.aufgabeId != null) {
     const zeile = gruppe.zeilen[0]
     return (
@@ -95,6 +97,7 @@ function ZellenSlot({
         zeilenZuteilungen={[zeile.zuteilungen.find(z => z.datum === datum) ?? { id: null, aufgabeId: spalte.aufgabeId, mitgliedId: null, anzeigename: null, datum }]}
         mitglieder={plan.mitglieder}
         kuerzelMap={kuerzel}
+        aufgabenNamen={aufgabenNamen}
         cellKey={`box-${spalte.aufgabeId}-${datum}`}
         aktionen={aktionen}
       />
@@ -111,6 +114,7 @@ function ZellenSlot({
       )}
       mitglieder={plan.mitglieder}
       kuerzelMap={kuerzel}
+      aufgabenNamen={aufgabenNamen}
       cellKey={`slot-${spalte.zeitfensterId}-${datum}`}
       aktionen={aktionen}
     />

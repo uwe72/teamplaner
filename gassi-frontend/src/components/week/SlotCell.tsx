@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core'
+import type { ReactNode } from 'react'
 import type { MitgliedPlanInfo, Zuteilung } from '../../types'
 import { wochentagKurz } from '../../utils/datum'
 import { useAvatar } from '../../hooks/useAvatar'
@@ -29,6 +30,7 @@ interface SlotCellProps {
   zeilenZuteilungen: Zuteilung[]
   mitglieder: MitgliedPlanInfo[]
   kuerzelMap: Map<string, string>
+  aufgabenNamen?: Map<number, string>
   cellKey: string
   aktionen: SlotCellAktionen
   varianz?: 'mobil' | 'desktop'
@@ -42,6 +44,7 @@ export default function SlotCell({
   zeilenZuteilungen,
   mitglieder,
   kuerzelMap,
+  aufgabenNamen,
   cellKey,
   aktionen,
   varianz = 'mobil',
@@ -65,6 +68,13 @@ export default function SlotCell({
   const teilweise = mehrere && zeilenZuteilungen.some(z => !z.mitgliedId)
   const istHeute = datum === aktionen.heute
   const pop = cellKey === aktionen.popCellKey ? 'tp-pop' : undefined
+
+  const aufgabenProPerson = new Map(personen.map(p => [
+    p.id,
+    zeilenZuteilungen.filter(z => z.mitgliedId === p.id).map(z => z.aufgabeId),
+  ]))
+  const zeigeAufgabenBadge = personen.length === 2
+    && [...aufgabenProPerson.values()].every(ids => ids.length === 1)
 
   const wochentag = wochentagKurz(datum)
   const name = person?.anzeigename ?? zeilenZuteilungen[0]?.anzeigename ?? ''
@@ -233,7 +243,6 @@ export default function SlotCell({
           {personen.slice(0, 3).map((p, idx) => {
             const kreis = (
               <PersonKreis
-                key={p.id}
                 person={p}
                 kuerzel={kuerzelMap.get(p.anzeigename)}
                 mitglieder={mitglieder}
@@ -242,9 +251,10 @@ export default function SlotCell({
               />
             )
             const verbleibende = personen.length - 3
+            let inner: ReactNode = kreis
             if (idx > 0 && verbleibende > 0 && idx === 2) {
-              return (
-                <span key={`mehr-${p.id}`} className="relative inline-flex" style={{ height: 44 }}>
+              inner = (
+                <span className="relative inline-flex" style={{ height: 44 }}>
                   {kreis}
                   <span
                     aria-label={`${verbleibende} weitere`}
@@ -267,24 +277,56 @@ export default function SlotCell({
                   </span>
                 </span>
               )
+            } else if (idx === personen.length - 1 && teilweise && personen.length <= 3) {
+              inner = (
+                <span className="relative inline-flex" style={{ height: 44 }}>
+                  {kreis}
+                  <span
+                    className="absolute rounded-full tp-pulse"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      right: -3,
+                      bottom: zeigeAufgabenBadge ? 22 : 0,
+                      backgroundColor: 'var(--tp-free-bg)',
+                      border: '2px dashed var(--tp-free-border)',
+                      boxShadow: '0 0 0 2px var(--tp-surface)',
+                    }}
+                    aria-label={`${LABELS.unitSingular} teilweise frei`}
+                  />
+                </span>
+              )
             }
-            if (idx < personen.length - 1 || !teilweise || personen.length > 3) return kreis
+            const badgeName = zeigeAufgabenBadge
+              ? aufgabenNamen?.get(aufgabenProPerson.get(p.id)?.[0] ?? -1)
+              : undefined
+            const badgeFarbe = personFarbe(p, mitglieder)
             return (
-              <span key={`tw-${p.id}`} className="relative inline-flex" style={{ height: 44 }}>
-                {kreis}
-                <span
-                  className="absolute rounded-full tp-pulse"
-                  style={{
-                    width: 18,
-                    height: 18,
-                    right: -3,
-                    bottom: 0,
-                    backgroundColor: 'var(--tp-free-bg)',
-                    border: '2px dashed var(--tp-free-border)',
-                    boxShadow: '0 0 0 2px var(--tp-surface)',
-                  }}
-                  aria-label={`${LABELS.unitSingular} teilweise frei`}
-                />
+              <span key={p.id} className="relative inline-flex" style={{ height: 44 }}>
+                {inner}
+                {badgeName && (
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      bottom: 2,
+                      ...(idx === 0 ? { left: -10 } : { right: -10 }),
+                      backgroundColor: badgeFarbe ?? 'var(--tp-ink)',
+                      color: '#fff',
+                      fontSize: 9,
+                      fontWeight: 700,
+                      lineHeight: 1.4,
+                      padding: '1px 5px',
+                      boxShadow: '0 0 0 2px var(--tp-surface)',
+                      whiteSpace: 'nowrap',
+                      maxWidth: 60,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      zIndex: 2,
+                    }}
+                  >
+                    {badgeName.length > 10 ? badgeName.slice(0, 10) + '…' : badgeName}
+                  </span>
+                )}
               </span>
             )
           })}
