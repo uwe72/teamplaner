@@ -238,7 +238,6 @@ export default function SlotCell({
                 kuerzel={kuerzelMap.get(p.anzeigename)}
                 mitglieder={mitglieder}
                 groesse={44}
-                versatz={personen.length > 1 ? -12 : 0}
                 vorderster={idx === 0}
               />
             )
@@ -385,20 +384,17 @@ function PersonKreis({
   kuerzel,
   mitglieder,
   groesse,
-  versatz = 0,
   vorderster = false,
 }: {
   person: MitgliedPlanInfo
   kuerzel: string | undefined
   mitglieder: MitgliedPlanInfo[]
   groesse: number
-  versatz?: number
   vorderster?: boolean
 }) {
   return (
     <span
       className="relative inline-flex shrink-0"
-      style={vorderster && versatz !== 0 ? { marginRight: versatz } : { marginLeft: versatz }}
     >
       <RundAvatar
         mitgliedId={person.id}

@@ -364,17 +364,31 @@ export default function Plan() {
                   blanko
                 />
                 <hr className="border-0 border-t" style={{ borderTopColor: 'var(--color-border)', margin: '14px 0 10px' }} />
-                <PeopleProgress
-                  mitglieder={planAbfrage.data.mitglieder}
-                  kumuliertProzent={Object.fromEntries(
-                    (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
-                  )}
-                  padding="0"
-                  kachel
-                  gap={24}
-                  verteilen
-                  onPersonKlick={() => statistikRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                />
+                {planAbfrage.data.mitglieder.some(m => m.soll > 0) ? (
+                  <PeopleProgress
+                    mitglieder={planAbfrage.data.mitglieder.filter(m => m.soll > 0)}
+                    kumuliertProzent={Object.fromEntries(
+                      (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
+                    )}
+                    padding="0"
+                    kachel
+                    gap={24}
+                    verteilen
+                    onPersonKlick={() => statistikRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  />
+                ) : (
+                  <PeopleProgress
+                    mitglieder={planAbfrage.data.mitglieder}
+                    kumuliertProzent={Object.fromEntries(
+                      (statistikAbfrage.data?.kumuliert ?? []).map(k => [k.mitgliedId, k.prozent]),
+                    )}
+                    padding="0"
+                    kachel
+                    gap={24}
+                    verteilen
+                    onPersonKlick={() => statistikRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  />
+                )}
               </div>
               <div className="rounded-[18px]" style={{ backgroundColor: 'var(--tp-surface)', boxShadow: 'var(--tp-shadow)', padding: 24, flexShrink: 0 }}>
                 <DesktopRaster
