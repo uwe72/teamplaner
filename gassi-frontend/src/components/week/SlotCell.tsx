@@ -5,7 +5,7 @@ import { wochentagKurz } from '../../utils/datum'
 import { useAvatar } from '../../hooks/useAvatar'
 import RundAvatar from './RundAvatar'
 import Plus from './Plus'
-import { personFarbe, badgeFarbe } from '../../utils/farben'
+import { personFarbe } from '../../utils/farben'
 import { rundeVergangen } from '../../utils/runde'
 import { vorname } from '../../utils/vorname'
 import { LABELS } from '../../utils/texte'
@@ -300,7 +300,6 @@ export default function SlotCell({
             const badgeName = zeigeAufgabenBadge
               ? aufgabenNamen?.get(aufgabenProPerson.get(p.id)?.[0] ?? -1)
               : undefined
-            const badgeHintergrund = badgeFarbe(p, mitglieder)
             return (
               <span key={p.id} className="relative inline-flex" style={{ height: 44 }}>
                 {inner}
@@ -308,9 +307,9 @@ export default function SlotCell({
                   <span
                     className="absolute rounded-full"
                     style={{
-                      bottom: 2,
-                      ...(idx === 0 ? { left: -24 } : { right: -24 }),
-                      backgroundColor: badgeHintergrund ?? 'var(--tp-ink)',
+                      ...(idx === 0
+                        ? { left: -24, top: 2, backgroundColor: '#f97316' }
+                        : { right: -24, bottom: 2, backgroundColor: '#3b82f6' }),
                       color: '#fff',
                       fontSize: 9,
                       fontWeight: 700,

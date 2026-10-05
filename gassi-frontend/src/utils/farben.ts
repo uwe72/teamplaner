@@ -17,20 +17,6 @@ export function mitgliedFarbe(index: number): string {
   return MITGLIED_FARBPALETTE[index % MITGLIED_FARBPALETTE.length]
 }
 
-export const BADGE_FARBPALETTE = [
-  '#f59e0b', '#f97316', '#ef4444', '#ec4899', '#a855f7', '#6366f1',
-  '#3b82f6', '#06b6d4', '#10b981', '#22c55e',
-]
-
-export function badgeFarbe<T extends PersonFarbeQuelle>(
-  person: T | null | undefined,
-  alle: T[],
-): string | null {
-  if (!person) return null
-  const index = alle.findIndex(m => m.id === person.id)
-  return index >= 0 ? BADGE_FARBPALETTE[index % BADGE_FARBPALETTE.length] : null
-}
-
 export type PersonFarbeQuelle = { id: number; farbe?: string | null }
 
 export function personFarbe<T extends PersonFarbeQuelle>(
