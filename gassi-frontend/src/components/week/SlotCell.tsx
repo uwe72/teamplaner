@@ -307,15 +307,14 @@ export default function SlotCell({
                   <span
                     className="absolute rounded-full"
                     style={{
-                      ...(idx === 0
-                        ? { left: -24, top: 2, backgroundColor: '#f97316' }
-                        : { right: -24, bottom: 2, backgroundColor: '#3b82f6' }),
-                      color: '#fff',
+                      ...(idx === 0 ? { left: -24, bottom: 2 } : { right: -24, bottom: 2 }),
+                      backgroundColor: '#fff',
+                      border: '1px solid #000',
+                      color: '#000',
                       fontSize: 9,
                       fontWeight: 700,
                       lineHeight: 1.4,
                       padding: '1px 5px',
-                      boxShadow: '0 0 0 2px var(--tp-surface)',
                       whiteSpace: 'nowrap',
                       maxWidth: 60,
                       overflow: 'hidden',
