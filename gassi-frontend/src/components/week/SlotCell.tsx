@@ -30,7 +30,6 @@ interface SlotCellProps {
   zeilenZuteilungen: Zuteilung[]
   mitglieder: MitgliedPlanInfo[]
   kuerzelMap: Map<string, string>
-  aufgabenNamen?: Map<number, string>
   cellKey: string
   aktionen: SlotCellAktionen
   varianz?: 'mobil' | 'desktop'
@@ -44,7 +43,6 @@ export default function SlotCell({
   zeilenZuteilungen,
   mitglieder,
   kuerzelMap,
-  aufgabenNamen,
   cellKey,
   aktionen,
   varianz = 'mobil',
@@ -68,13 +66,6 @@ export default function SlotCell({
   const teilweise = mehrere && zeilenZuteilungen.some(z => !z.mitgliedId)
   const istHeute = datum === aktionen.heute
   const pop = cellKey === aktionen.popCellKey ? 'tp-pop' : undefined
-
-  const aufgabenProPerson = new Map(personen.map(p => [
-    p.id,
-    zeilenZuteilungen.filter(z => z.mitgliedId === p.id).map(z => z.aufgabeId),
-  ]))
-  const zeigeAufgabenBadge = personen.length === 2
-    && [...aufgabenProPerson.values()].every(ids => ids.length === 1)
 
   const wochentag = wochentagKurz(datum)
   const name = person?.anzeigename ?? zeilenZuteilungen[0]?.anzeigename ?? ''
@@ -287,7 +278,7 @@ export default function SlotCell({
                       width: 18,
                       height: 18,
                       right: -3,
-                      bottom: zeigeAufgabenBadge ? 22 : 0,
+                      bottom: 0,
                       backgroundColor: 'var(--tp-free-bg)',
                       border: '2px dashed var(--tp-free-border)',
                       boxShadow: '0 0 0 2px var(--tp-surface)',
@@ -297,34 +288,9 @@ export default function SlotCell({
                 </span>
               )
             }
-            const badgeName = zeigeAufgabenBadge
-              ? aufgabenNamen?.get(aufgabenProPerson.get(p.id)?.[0] ?? -1)
-              : undefined
             return (
               <span key={p.id} className="relative inline-flex" style={{ height: 44 }}>
                 {inner}
-                {badgeName && (
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      ...(idx === 0 ? { left: -24, bottom: 2 } : { right: -24, bottom: 2 }),
-                      backgroundColor: '#fff',
-                      border: '1px solid #000',
-                      color: '#000',
-                      fontSize: 9,
-                      fontWeight: 700,
-                      lineHeight: 1.4,
-                      padding: '1px 5px',
-                      whiteSpace: 'nowrap',
-                      maxWidth: 60,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      zIndex: 2,
-                    }}
-                  >
-                    {badgeName.length > 10 ? badgeName.slice(0, 10) + '…' : badgeName}
-                  </span>
-                )}
               </span>
             )
           })}
