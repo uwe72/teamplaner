@@ -54,13 +54,12 @@ public class StatistikService {
 
         LocalDate heute = zeitService.heute();
         LocalDate montagAktuell = montagDerWoche(heute);
-        LocalDate gestern = heute.minusDays(1);
 
         List<StatistikDto.StatistikZeile> wochenweise;
         if (isoJahr != null && isoWoche != null) {
             LocalDate montag = zeitService.montagVon(isoJahr, isoWoche);
             LocalDate sonntag = montag.plusDays(6);
-            LocalDate zaehlBis = sonntag.isBefore(gestern) ? sonntag : gestern;
+            LocalDate zaehlBis = sonntag.isBefore(heute) ? sonntag : heute;
             wochenweise = mitglieder.stream()
                 .map(m -> {
                     long ist = zaehlBis.isBefore(montag) ? 0
@@ -77,13 +76,13 @@ public class StatistikService {
 
         LocalDate ersterMontag = montagDerWoche(team.getErstelltAm().toLocalDate());
         LocalDate letzterSonntag = montagAktuell.plusDays(6);
-        long abgelaufeneTageAktuelleWoche = gestern.isBefore(montagAktuell)
+        long abgelaufeneTageAktuelleWoche = heute.isBefore(montagAktuell)
             ? 0
-            : java.time.temporal.ChronoUnit.DAYS.between(montagAktuell, gestern) + 1;
+            : java.time.temporal.ChronoUnit.DAYS.between(montagAktuell, heute) + 1;
         long wochenAnzahl = zeitService.wochenZwischen(ersterMontag, montagAktuell);
         List<StatistikDto.StatistikZeile> kumuliert = mitglieder.stream()
             .map(m -> {
-                LocalDate zaehlBis = letzterSonntag.isBefore(gestern) ? letzterSonntag : gestern;
+                LocalDate zaehlBis = letzterSonntag.isBefore(heute) ? letzterSonntag : heute;
                 long ist = zaehlBis.isBefore(ersterMontag) ? 0
                     : zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, ersterMontag, zaehlBis);
                 long moeglich = wochenAnzahl * aufkommenProWoche + abgelaufeneTageAktuelleWoche * Math.round(aufkommenProWoche / 7.0);
@@ -94,7 +93,7 @@ public class StatistikService {
         List<StatistikDto.StatistikZeile> zielerreichung = mitglieder.stream()
             .filter(m -> solls.getOrDefault(m.getId(), 0) > 0)
             .map(m -> {
-                LocalDate zaehlBis = letzterSonntag.isBefore(gestern) ? letzterSonntag : gestern;
+                LocalDate zaehlBis = letzterSonntag.isBefore(heute) ? letzterSonntag : heute;
                 long ist = zaehlBis.isBefore(ersterMontag) ? 0
                     : zuteilungRepository.zaehleMitgliedImBereichImZeitraum(m.getId(), bereichId, ersterMontag, zaehlBis);
                 long wochenMitIst = abgelaufeneTageAktuelleWoche > 0 ? wochenAnzahl + 1 : wochenAnzahl;

@@ -284,7 +284,6 @@ public class HaPlanTest extends AbstractIntegrationTest {
     void planLiefertStatistikWieStatistikseite() throws Exception {
         JsonNode daten = aufbau();
         LocalDate heute = LocalDate.parse(daten.get("heute").asText());
-        LocalDate gestern = heute.minusDays(1);
         long aufkommenProWoche = 14;
         long aufkommenProTag = Math.round(aufkommenProWoche / 7.0);
 
@@ -292,17 +291,14 @@ public class HaPlanTest extends AbstractIntegrationTest {
                 .header("Authorization", "Bearer " + daten.get("adminToken").asText())
                 .contentType("application/json")
                 .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}"
-                    .formatted(daten.get("aufgabeAbendsId").asLong(), gestern,
+                    .formatted(daten.get("aufgabeAbendsId").asLong(), heute,
                         daten.get("annaId").asLong())))
             .andExpect(status().isCreated());
 
         LocalDate ersterMontag = heute.with(java.time.DayOfWeek.MONDAY);
-        boolean gesternAbTeamstart = !gestern.isBefore(ersterMontag);
-        long abgelaufeneTage = gesternAbTeamstart
-            ? java.time.temporal.ChronoUnit.DAYS.between(ersterMontag, gestern) + 1
-            : 0;
+        long abgelaufeneTage = java.time.temporal.ChronoUnit.DAYS.between(ersterMontag, heute) + 1;
         long gesamtSumme = abgelaufeneTage * aufkommenProTag;
-        int anzahlGesamt = gesternAbTeamstart ? 1 : 0;
+        int anzahlGesamt = 2;
         double prozentGesamt = gesamtSumme > 0
             ? Math.round(100.0 * anzahlGesamt / gesamtSumme * 10.0) / 10.0
             : 0.0;
@@ -311,8 +307,8 @@ public class HaPlanTest extends AbstractIntegrationTest {
         int anzahlZiele;
         double prozentZiele;
         long sollProWoche = 10;
-        zieleSumme = gesternAbTeamstart ? sollProWoche : 0;
-        anzahlZiele = gesternAbTeamstart ? 1 : 0;
+        zieleSumme = sollProWoche;
+        anzahlZiele = 2;
         prozentZiele = zieleSumme > 0
             ? Math.round(100.0 * anzahlZiele / zieleSumme * 10.0) / 10.0
             : 0.0;
@@ -329,20 +325,11 @@ public class HaPlanTest extends AbstractIntegrationTest {
 
         JsonNode gesamtPersonen = gesamt.get("personen");
         assertThat(gesamtPersonen).hasSize(2);
-        if (gesternAbTeamstart) {
-            assertThat(gesamtPersonen.get(0).get("kuerzel").asText()).isEqualTo("AN");
-            assertThat(gesamtPersonen.get(0).get("anzahl").asLong()).isEqualTo(anzahlGesamt);
-            assertThat(gesamtPersonen.get(0).get("prozent").asDouble()).isEqualTo(prozentGesamt);
-            assertThat(gesamtPersonen.get(1).get("anzahl").asLong()).isZero();
-            assertThat(gesamtPersonen.get(1).get("prozent").asDouble()).isZero();
-        } else {
-            assertThat(gesamtPersonen.get(0).get("kuerzel").asText()).isEqualTo("AD");
-            assertThat(gesamtPersonen.get(0).get("anzahl").asLong()).isZero();
-            assertThat(gesamtPersonen.get(0).get("prozent").asDouble()).isZero();
-            assertThat(gesamtPersonen.get(1).get("kuerzel").asText()).isEqualTo("AN");
-            assertThat(gesamtPersonen.get(1).get("anzahl").asLong()).isZero();
-            assertThat(gesamtPersonen.get(1).get("prozent").asDouble()).isZero();
-        }
+        assertThat(gesamtPersonen.get(0).get("kuerzel").asText()).isEqualTo("AN");
+        assertThat(gesamtPersonen.get(0).get("anzahl").asLong()).isEqualTo(anzahlGesamt);
+        assertThat(gesamtPersonen.get(0).get("prozent").asDouble()).isEqualTo(prozentGesamt);
+        assertThat(gesamtPersonen.get(1).get("anzahl").asLong()).isZero();
+        assertThat(gesamtPersonen.get(1).get("prozent").asDouble()).isZero();
 
         JsonNode ziele = statistik.get("zielerreichung");
         assertThat(ziele.get("titel").asText()).isEqualTo("Zielerreichung");
