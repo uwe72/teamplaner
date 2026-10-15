@@ -258,13 +258,19 @@
   --breakpoint-md: 48rem;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
   background-color: var(--color-page);
   color: var(--color-foreground);
   overflow-x: hidden;
+  overscroll-behavior: none;
 }
 
 .card {

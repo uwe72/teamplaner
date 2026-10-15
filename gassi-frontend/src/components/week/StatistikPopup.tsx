@@ -8,7 +8,7 @@ export default function StatistikPopup({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-3 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-3 sm:p-4" style={{ touchAction: 'none' }} onClick={onClose}>
       <div
         className="p-4 sm:p-5 bg-card border border-border rounded-card shadow-2xl w-full max-w-[640px] max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
