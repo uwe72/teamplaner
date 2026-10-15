@@ -52,6 +52,12 @@ export default function Plan() {
     }
   }, [bereicheAbfrage.data, bereichId, navigate])
 
+  useEffect(() => {
+    if (!overlay && !statistikOffen) return
+    document.body.classList.add('overlay-offen')
+    return () => document.body.classList.remove('overlay-offen')
+  }, [overlay, statistikOffen])
+
   const zielWoche = fokus ?? aktuelleIsoWocheJetzt()
   const heute = heutigesDatum()
 

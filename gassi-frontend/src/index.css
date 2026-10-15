@@ -878,6 +878,10 @@ body {
   animation: tp-pop 0.38s ease-out both;
 }
 
+body.overlay-offen .tp-pulse {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tp-pulse,
   .tp-pop {
