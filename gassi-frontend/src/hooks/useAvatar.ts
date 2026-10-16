@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import {
   avatarHochladenFuer,
@@ -9,6 +9,47 @@ import {
   eigenesAvatarLoeschen,
 } from '../api/auth'
 import { aktivesTeamId } from '../api/client'
+
+interface Eintrag {
+  url: string
+  nutzer: number
+  timeout?: number
+}
+
+const eintraege = new Map<Blob, Eintrag>()
+
+function urlFuer(blob: Blob | null | undefined): string | null {
+  if (!(blob instanceof Blob)) return null
+  let eintrag = eintraege.get(blob)
+  if (!eintrag) {
+    eintrag = { url: URL.createObjectURL(blob), nutzer: 0 }
+    eintraege.set(blob, eintrag)
+  }
+  return eintrag.url
+}
+
+function aufnehmen(blob: Blob | null | undefined) {
+  if (!(blob instanceof Blob)) return
+  const eintrag = eintraege.get(blob)
+  if (!eintrag) return
+  eintrag.nutzer += 1
+  if (eintrag.timeout !== undefined) {
+    clearTimeout(eintrag.timeout)
+    eintrag.timeout = undefined
+  }
+}
+
+function freigeben(blob: Blob | null | undefined) {
+  if (!(blob instanceof Blob)) return
+  const eintrag = eintraege.get(blob)
+  if (!eintrag) return
+  eintrag.nutzer -= 1
+  if (eintrag.nutzer > 0) return
+  eintrag.timeout = setTimeout(() => {
+    URL.revokeObjectURL(eintrag.url)
+    eintraege.delete(blob)
+  }, 30000)
+}
 
 export function useAvatar(mitgliedId: number | null | undefined, avatarUrl: string | null | undefined) {
   const teamId = aktivesTeamId()
@@ -29,15 +70,11 @@ export function useAvatar(mitgliedId: number | null | undefined, avatarUrl: stri
     staleTime: 1000 * 60 * 5,
   })
 
-  const [url, setUrl] = useState<string | null>(null)
+  const url = urlFuer(query.data)
 
   useEffect(() => {
-    if (query.data instanceof Blob) {
-      const objectUrl = URL.createObjectURL(query.data)
-      setUrl(objectUrl)
-      return () => URL.revokeObjectURL(objectUrl)
-    }
-    setUrl(null)
+    aufnehmen(query.data)
+    return () => freigeben(query.data)
   }, [query.data])
 
   return { ...query, data: url }

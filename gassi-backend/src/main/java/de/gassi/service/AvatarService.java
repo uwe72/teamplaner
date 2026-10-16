@@ -4,18 +4,25 @@ import de.gassi.domain.Teammitglied;
 import de.gassi.exception.BusinessFehler;
 import de.gassi.repository.TeammitgliedRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AvatarService {
 
     private static final long MAX_BYTES = 2 * 1024 * 1024;
+    private static final int AVATAR_KANTE = 256;
+    private static final long VERKLEINERN_AB = 64 * 1024;
     private static final Set<String> ERLAUBTE_TYPEN = Set.of("image/jpeg", "image/png", "image/webp");
 
     private final TeammitgliedRepository teammitgliedRepository;
@@ -81,11 +88,12 @@ public class AvatarService {
             throw new BusinessFehler("BILD_ZU_GROSS", "Bild darf maximal 2 MB groß sein.");
         }
         try {
-            ziel.setAvatar(file.getBytes());
+            AvatarService.Bild skaliert = BildSkalierer.skalieren(file.getBytes(), contentType, AVATAR_KANTE);
+            ziel.setAvatar(skaliert.daten());
+            ziel.setAvatarContentType(skaliert.contentType());
         } catch (Exception e) {
             throw new BusinessFehler("BILD_UNLESBAR", "Das Bild konnte nicht gelesen werden.");
         }
-        ziel.setAvatarContentType(contentType);
         return teammitgliedRepository.save(ziel);
     }
 
@@ -94,6 +102,30 @@ public class AvatarService {
             return Optional.empty();
         }
         return Optional.of(new Bild(ziel.getAvatar(), ziel.getAvatarContentType()));
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void bestandVerkleinern() {
+        List<Teammitglied> mitglieder = teammitgliedRepository.findAll();
+        int veraendert = 0;
+        for (Teammitglied mitglied : mitglieder) {
+            byte[] original = mitglied.getAvatar();
+            if (original == null || original.length <= VERKLEINERN_AB) {
+                continue;
+            }
+            String contentType = mitglied.getAvatarContentType() == null
+                ? "image/jpeg"
+                : mitglied.getAvatarContentType();
+            Bild skaliert = BildSkalierer.skalieren(original, contentType, AVATAR_KANTE);
+            if (skaliert.daten().length < original.length) {
+                mitglied.setAvatar(skaliert.daten());
+                mitglied.setAvatarContentType(skaliert.contentType());
+                teammitgliedRepository.save(mitglied);
+                veraendert++;
+            }
+        }
+        log.info("Bestand: {} Avatare auf {} px verkleinert", veraendert, AVATAR_KANTE);
     }
 
     public static String avatarUrlFuer(Long teamId, Long mitgliedId, boolean hatAvatar) {

@@ -19,14 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.imageio.ImageIO;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -166,44 +158,9 @@ public class HaPlanService {
     }
 
     private AvatarService.Bild skaliert(Teammitglied mitglied) {
-        byte[] original = mitglied.getAvatar();
         String contentType = mitglied.getAvatarContentType() == null
             ? "image/jpeg"
             : mitglied.getAvatarContentType();
-
-        BufferedImage quelle;
-        try {
-            quelle = ImageIO.read(new ByteArrayInputStream(original));
-        } catch (Exception e) {
-            quelle = null;
-        }
-        if (quelle == null) {
-            return new AvatarService.Bild(original, contentType);
-        }
-
-        int breite = quelle.getWidth();
-        int hoehe = quelle.getHeight();
-        double skala = Math.min(1.0, Math.min((double) MAX_KANTE / breite, (double) MAX_KANTE / hoehe));
-        if (skala >= 1.0 && "image/jpeg".equals(contentType)) {
-            return new AvatarService.Bild(original, contentType);
-        }
-
-        int neuBreite = Math.max(1, (int) Math.round(breite * skala));
-        int neuHoehe = Math.max(1, (int) Math.round(hoehe * skala));
-        BufferedImage ziel = new BufferedImage(neuBreite, neuHoehe, BufferedImage.TYPE_INT_RGB);
-        Graphics2D grafik = ziel.createGraphics();
-        grafik.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        grafik.setColor(Color.WHITE);
-        grafik.fillRect(0, 0, neuBreite, neuHoehe);
-        grafik.drawImage(quelle, 0, 0, neuBreite, neuHoehe, null);
-        grafik.dispose();
-
-        ByteArrayOutputStream puffer = new ByteArrayOutputStream();
-        try {
-            ImageIO.write(ziel, "jpg", puffer);
-        } catch (IOException e) {
-            return new AvatarService.Bild(original, contentType);
-        }
-        return new AvatarService.Bild(puffer.toByteArray(), "image/jpeg");
+        return BildSkalierer.skalieren(mitglied.getAvatar(), contentType, MAX_KANTE);
     }
 }
