@@ -1,6 +1,7 @@
 package de.gassi.controller;
 
 import de.gassi.AbstractIntegrationTest;
+import de.gassi.TestBilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -8,6 +9,12 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -139,6 +146,31 @@ public class AvatarTest extends AbstractIntegrationTest {
         mvc.perform(get("/api/teams/%d/mitglieder/%d/avatar".formatted(teamId, mitgliedId))
                 .header("Authorization", "Bearer " + mitgliedToken))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void jpegMitOrientation6WirdHochkantGespeichert() throws Exception {
+        JsonNode daten = aufbau();
+        String adminToken = daten.at("/admin/token").asText();
+        Long teamId = daten.get("teamId").asLong();
+        Long mitgliedId = daten.get("mitgliedId").asLong();
+
+        mvc.perform(MockMvcRequestBuilders.multipart(
+                    HttpMethod.PUT, "/api/teams/%d/mitglieder/%d/avatar".formatted(teamId, mitgliedId))
+                .file(new MockMultipartFile("file", "bild.jpg", "image/jpeg",
+                    TestBilder.querJpegMitOrientation6()))
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk());
+
+        MvcResult foto = mvc.perform(get("/api/teams/%d/mitglieder/%d/avatar".formatted(teamId, mitgliedId))
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType("image/jpeg"))
+            .andReturn();
+
+        BufferedImage dekodiert = ImageIO.read(new ByteArrayInputStream(foto.getResponse().getContentAsByteArray()));
+        assertThat(dekodiert).isNotNull();
+        assertThat(dekodiert.getHeight()).isGreaterThan(dekodiert.getWidth());
     }
 
     @Test

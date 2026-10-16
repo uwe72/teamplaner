@@ -1,7 +1,9 @@
 package de.gassi.service;
 
+import de.gassi.domain.SystemConfig;
 import de.gassi.domain.Teammitglied;
 import de.gassi.exception.BusinessFehler;
+import de.gassi.repository.SystemConfigRepository;
 import de.gassi.repository.TeammitgliedRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +25,11 @@ public class AvatarService {
     private static final long MAX_BYTES = 2 * 1024 * 1024;
     private static final int AVATAR_KANTE = 256;
     private static final long VERKLEINERN_AB = 64 * 1024;
+    private static final String EXIF_MIGRATION_SCHLUESSEL = "avatar_exif_migration_done";
     private static final Set<String> ERLAUBTE_TYPEN = Set.of("image/jpeg", "image/png", "image/webp");
 
     private final TeammitgliedRepository teammitgliedRepository;
+    private final SystemConfigRepository systemConfigRepository;
     private final TeamZugriffsPruefer zugriffsPruefer;
 
     @Transactional
@@ -126,6 +130,37 @@ public class AvatarService {
             }
         }
         log.info("Bestand: {} Avatare auf {} px verkleinert", veraendert, AVATAR_KANTE);
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void exifOrientationFestEinrechnen() {
+        if (systemConfigRepository.findBySchluessel(EXIF_MIGRATION_SCHLUESSEL).isPresent()) {
+            return;
+        }
+        List<Teammitglied> mitglieder = teammitgliedRepository.findAll();
+        int veraendert = 0;
+        for (Teammitglied mitglied : mitglieder) {
+            byte[] original = mitglied.getAvatar();
+            if (original == null || original.length == 0) {
+                continue;
+            }
+            String contentType = mitglied.getAvatarContentType() == null
+                ? "image/jpeg"
+                : mitglied.getAvatarContentType();
+            Bild verarbeitet = BildSkalierer.skalieren(original, contentType, AVATAR_KANTE);
+            if (verarbeitet.daten() != original) {
+                mitglied.setAvatar(verarbeitet.daten());
+                mitglied.setAvatarContentType(verarbeitet.contentType());
+                teammitgliedRepository.save(mitglied);
+                veraendert++;
+            }
+        }
+        systemConfigRepository.save(SystemConfig.builder()
+            .schluessel(EXIF_MIGRATION_SCHLUESSEL)
+            .wert("1")
+            .build());
+        log.info("Migration: {} Avatare mit EXIF-Orientation fest in die Pixel überführt", veraendert);
     }
 
     public static String avatarUrlFuer(Long teamId, Long mitgliedId, boolean hatAvatar) {

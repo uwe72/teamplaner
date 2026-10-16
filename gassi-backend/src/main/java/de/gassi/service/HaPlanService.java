@@ -35,6 +35,7 @@ import java.util.Optional;
 public class HaPlanService {
 
     private static final int MAX_KANTE = 128;
+    private static final int FOTO_VERSION = 2;
     private static final String[] TAG_KURZ = {"Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"};
     private static final java.text.Collator DE = java.text.Collator.getInstance(Locale.GERMAN);
 
@@ -90,7 +91,7 @@ public class HaPlanService {
                     .orElse(0);
                 long ist = istProMitglied.getOrDefault(m.getId(), 0L);
                 String foto = m.getAvatar() != null && m.getAvatar().length > 0
-                    ? "/api/ha/foto/" + m.getId()
+                    ? "/api/ha/foto/" + m.getId() + "?v=" + FOTO_VERSION
                     : null;
                 return new HaPlanDto.Person(kuerzel.get(m.getAnzeigename()), m.getAnzeigename(), foto,
                     (int) ist, soll);

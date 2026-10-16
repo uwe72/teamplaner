@@ -252,7 +252,7 @@ public class HaPlanTest extends AbstractIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
         JsonNode person = findePerson(om.readTree(plan.getResponse().getContentAsString()), "Anna");
-        assertThat(person.get("foto").asText()).isEqualTo("/api/ha/foto/" + annaId);
+        assertThat(person.get("foto").asText()).isEqualTo("/api/ha/foto/" + annaId + "?v=2");
 
         mvc.perform(get("/api/ha/foto/%d?k=%s".formatted(annaId, TOKEN)))
             .andExpect(status().isOk())
