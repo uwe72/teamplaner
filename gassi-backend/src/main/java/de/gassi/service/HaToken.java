@@ -19,6 +19,10 @@ public class HaToken {
         return !token.isEmpty();
     }
 
+    public String tokenWert() {
+        return token;
+    }
+
     public boolean stimmt(String kandidat) {
         if (!aktiv() || kandidat == null) {
             return false;

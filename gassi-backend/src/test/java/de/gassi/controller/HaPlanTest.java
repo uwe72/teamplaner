@@ -2,6 +2,7 @@ package de.gassi.controller;
 
 import de.gassi.AbstractIntegrationTest;
 import de.gassi.service.HaToken;
+import de.gassi.service.KonfigurationsService;
 import de.gassi.service.ZeitService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.AfterEach;
@@ -15,6 +16,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,6 +32,9 @@ public class HaPlanTest extends AbstractIntegrationTest {
 
     @Autowired
     private HaToken haToken;
+
+    @Autowired
+    private KonfigurationsService konfigurationsService;
 
     @Autowired
     private ZeitService zeitService;
@@ -252,12 +257,153 @@ public class HaPlanTest extends AbstractIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
         JsonNode person = findePerson(om.readTree(plan.getResponse().getContentAsString()), "Anna");
-        assertThat(person.get("foto").asText()).isEqualTo("/api/ha/foto/" + annaId + "?v=2");
+        assertThat(person.get("foto").asText()).isEqualTo("/api/ha/foto/" + annaId + "?k=" + TOKEN + "&v=2");
 
         mvc.perform(get("/api/ha/foto/%d?k=%s".formatted(annaId, TOKEN)))
             .andExpect(status().isOk())
             .andExpect(header().string("Cache-Control", "max-age=86400"))
             .andExpect(content().bytes(new byte[]{1, 2, 3, 4, 5}));
+    }
+
+    @Test
+    void fotoUrlIstAbsolutMitBasisUrlUndSchluessel() throws Exception {
+        JsonNode daten = aufbau();
+        Long annaId = daten.get("annaId").asLong();
+        String adminToken = daten.get("adminToken").asText();
+        Long teamId = daten.get("teamId").asLong();
+
+        mvc.perform(MockMvcRequestBuilders.multipart(
+                    org.springframework.http.HttpMethod.PUT,
+                    "/api/teams/%d/mitglieder/%d/avatar".formatted(teamId, annaId))
+                .file(new MockMultipartFile("file", "bild.png", "image/png", new byte[]{1, 2, 3, 4, 5}))
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk());
+
+        konfigurationsService.setzen(Map.of(KonfigurationsService.WEB_URL, "https://teamplaner.example/"));
+
+        MvcResult plan = mvc.perform(get("/api/ha/plan/%d".formatted(daten.get("bereichId").asLong()))
+                .header("X-HA-Token", TOKEN))
+            .andExpect(status().isOk())
+            .andReturn();
+        JsonNode person = findePerson(om.readTree(plan.getResponse().getContentAsString()), "Anna");
+        assertThat(person.get("foto").asText())
+            .isEqualTo("https://teamplaner.example/api/ha/foto/" + annaId + "?k=" + TOKEN + "&v=2");
+
+        mvc.perform(get(person.get("foto").asText()))
+            .andExpect(status().isOk())
+            .andExpect(content().bytes(new byte[]{1, 2, 3, 4, 5}));
+    }
+
+    @Test
+    void fotoUrlCodiertSchluesselSicher() throws Exception {
+        JsonNode daten = aufbau();
+        Long annaId = daten.get("annaId").asLong();
+        String adminToken = daten.get("adminToken").asText();
+        Long teamId = daten.get("teamId").asLong();
+
+        mvc.perform(MockMvcRequestBuilders.multipart(
+                    org.springframework.http.HttpMethod.PUT,
+                    "/api/teams/%d/mitglieder/%d/avatar".formatted(teamId, annaId))
+                .file(new MockMultipartFile("file", "bild.png", "image/png", new byte[]{1, 2, 3, 4, 5}))
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk());
+
+        konfigurationsService.setzen(Map.of(KonfigurationsService.WEB_URL, "https://teamplaner.example"));
+        ReflectionTestUtils.setField(haToken, "token", "ha tok/2&");
+
+        MvcResult plan = mvc.perform(get("/api/ha/plan/%d".formatted(daten.get("bereichId").asLong()))
+                .header("X-HA-Token", "ha tok/2&"))
+            .andExpect(status().isOk())
+            .andReturn();
+        JsonNode person = findePerson(om.readTree(plan.getResponse().getContentAsString()), "Anna");
+        assertThat(person.get("foto").asText())
+            .isEqualTo("https://teamplaner.example/api/ha/foto/" + annaId + "?k=ha%20tok%2F2%26&v=2");
+
+        String k = java.net.URLDecoder.decode(
+            org.springframework.web.util.UriComponentsBuilder
+                .fromUriString(person.get("foto").asText()).build()
+                .getQueryParams().getFirst("k"),
+            java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(k).isEqualTo("ha tok/2&");
+
+        mvc.perform(get("/api/ha/foto/%d".formatted(annaId)).queryParam("k", k))
+            .andExpect(status().isOk())
+            .andExpect(content().bytes(new byte[]{1, 2, 3, 4, 5}));
+    }
+
+    @Test
+    void planLiefertEineRundeJeSlotTrotzMehrerenAufgaben() throws Exception {
+        JsonNode daten = aufbau();
+        String adminToken = daten.get("adminToken").asText();
+        Long teamId = daten.get("teamId").asLong();
+        Long bereichId = daten.get("bereichId").asLong();
+
+        MvcResult morgens = mvc.perform(get(
+                    "/api/teams/%d/bereiche/%d/zeitfenster".formatted(teamId, bereichId))
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andReturn();
+        Long morgensId = null;
+        for (JsonNode zeitfenster : om.readTree(morgens.getResponse().getContentAsString())) {
+            if (zeitfenster.get("name").asText().equals("Morgens")) {
+                morgensId = zeitfenster.get("id").asLong();
+            }
+        }
+
+        MvcResult aufgabeZwei = mvc.perform(
+                post("/api/teams/%d/bereiche/%d/zeitfenster/%d/aufgaben".formatted(teamId, bereichId, morgensId))
+                    .header("Authorization", "Bearer " + adminToken)
+                    .contentType("application/json")
+                    .content("{\"name\":\"Gassi Gruen\"}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+        Long aufgabeZweiId = om.readTree(aufgabeZwei.getResponse().getContentAsString()).get("id").asLong();
+
+        String bertaLogin = eindeutig("berta");
+        MvcResult berta = mvc.perform(post("/api/teams/%d/mitglieder".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType("application/json")
+                .content("{\"login\":\"%s\",\"email\":\"%s@example.de\",\"passwort\":\"pw\",\"anzeigename\":\"Berta\"}"
+                    .formatted(bertaLogin, bertaLogin)))
+            .andExpect(status().isCreated())
+            .andReturn();
+        Long bertaId = om.readTree(berta.getResponse().getContentAsString()).get("id").asLong();
+
+        LocalDate heute = LocalDate.parse(daten.get("heute").asText());
+        mvc.perform(post("/api/teams/%d/zuteilungen".formatted(teamId))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType("application/json")
+                .content("{\"aufgabeId\":%d,\"datum\":\"%s\",\"mitgliedId\":%d}"
+                    .formatted(aufgabeZweiId, heute, bertaId)))
+            .andExpect(status().isCreated());
+
+        MvcResult result = mvc.perform(get("/api/ha/plan/%d".formatted(daten.get("bereichId").asLong()))
+                .header("X-HA-Token", TOKEN))
+            .andExpect(status().isOk())
+            .andReturn();
+        JsonNode plan = om.readTree(result.getResponse().getContentAsString());
+
+        for (JsonNode tag : plan.get("tage")) {
+            assertThat(tag.get("runden")).hasSize(2);
+            assertThat(tag.get("runden").get(0).get("slot").asText()).isEqualTo("Morgens");
+            assertThat(tag.get("runden").get(1).get("slot").asText()).isEqualTo("Abends");
+        }
+
+        JsonNode heuteTag = null;
+        for (JsonNode tag : plan.get("tage")) {
+            if (tag.get("datum").asText().equals(heute.toString())) {
+                heuteTag = tag;
+            }
+        }
+        JsonNode morgensRunde = heuteTag.get("runden").get(0);
+        assertThat(morgensRunde.get("frei").asBoolean()).isFalse();
+        assertThat(morgensRunde.get("personen")).hasSize(2);
+        assertThat(morgensRunde.get("personen").get(0).asText()).isEqualTo("AN");
+        assertThat(morgensRunde.get("personen").get(1).asText()).isEqualTo("BE");
+        assertThat(heuteTag.get("runden").get(1).get("frei").asBoolean()).isTrue();
+
+        int tageAbHeute = 7 - heute.getDayOfWeek().getValue() + 1;
+        assertThat(plan.get("offen").asInt()).isEqualTo(1 + 3 * (tageAbHeute - 1));
     }
 
     @Test

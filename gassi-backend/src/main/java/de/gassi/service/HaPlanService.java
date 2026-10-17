@@ -22,13 +22,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +52,8 @@ public class HaPlanService {
     private final TeammitgliedRepository teammitgliedRepository;
     private final ZeitService zeitService;
     private final StatistikService statistikService;
+    private final KonfigurationsService konfigurationsService;
+    private final HaToken haToken;
 
     @Transactional(readOnly = true)
     public HaPlanDto plan(Long bereichId) {
@@ -90,28 +97,32 @@ public class HaPlanService {
                     .map(Soll::getWert)
                     .orElse(0);
                 long ist = istProMitglied.getOrDefault(m.getId(), 0L);
-                String foto = m.getAvatar() != null && m.getAvatar().length > 0
-                    ? "/api/ha/foto/" + m.getId() + "?v=" + FOTO_VERSION
-                    : null;
-                return new HaPlanDto.Person(kuerzel.get(m.getAnzeigename()), m.getAnzeigename(), foto,
-                    (int) ist, soll);
+                return new HaPlanDto.Person(kuerzel.get(m.getAnzeigename()), m.getAnzeigename(),
+                    fotoUrl(m), (int) ist, soll);
             })
             .toList();
 
         int offen = 0;
+        Map<Long, List<Aufgabe>> aufgabenNachSlot = aufgaben.stream()
+            .collect(Collectors.groupingBy(a -> a.getZeitfenster().getId(), LinkedHashMap::new,
+                Collectors.toList()));
         List<HaPlanDto.Tag> tagListe = new ArrayList<>();
         for (LocalDate tag : tage) {
             List<HaPlanDto.Runde> runden = new ArrayList<>();
-            for (Aufgabe aufgabe : aufgaben) {
-                Zuteilung zuteilung = nachAufgabe.getOrDefault(aufgabe.getId(), Map.of()).get(tag);
-                boolean frei = zuteilung == null;
-                List<String> personenRunde = frei
-                    ? List.of()
-                    : List.of(kuerzel.getOrDefault(zuteilung.getMitglied().getAnzeigename(), "?"));
-                runden.add(new HaPlanDto.Runde(aufgabe.getZeitfenster().getName(), personenRunde, frei));
-                if (frei && !tag.isBefore(heute)) {
-                    offen++;
+            for (Zeitfenster slot : zeitfenster) {
+                LinkedHashSet<String> personenRunde = new LinkedHashSet<>();
+                for (Aufgabe aufgabe : aufgabenNachSlot.getOrDefault(slot.getId(), List.of())) {
+                    Zuteilung zuteilung = nachAufgabe.getOrDefault(aufgabe.getId(), Map.of()).get(tag);
+                    if (zuteilung == null) {
+                        if (!tag.isBefore(heute)) {
+                            offen++;
+                        }
+                    } else {
+                        personenRunde.add(kuerzel.getOrDefault(zuteilung.getMitglied().getAnzeigename(), "?"));
+                    }
                 }
+                runden.add(new HaPlanDto.Runde(slot.getName(), List.copyOf(personenRunde),
+                    personenRunde.isEmpty()));
             }
             tagListe.add(new HaPlanDto.Tag(tag, TAG_KURZ[tag.getDayOfWeek().getValue() - 1],
                 tag.equals(heute), runden));
@@ -133,6 +144,20 @@ public class HaPlanService {
                     personenVon(statistikDaten.kumuliert(), kuerzelStatistik)),
                 new HaPlanDto.Block("Zielerreichung", summeVon(statistikDaten.zielerreichung()),
                     personenVon(statistikDaten.zielerreichung(), kuerzelStatistik))));
+    }
+
+    private String fotoUrl(Teammitglied mitglied) {
+        if (mitglied.getAvatar() == null || mitglied.getAvatar().length == 0) {
+            return null;
+        }
+        String basis = konfigurationsService.wert(KonfigurationsService.WEB_URL, "");
+        while (basis.endsWith("/")) {
+            basis = basis.substring(0, basis.length() - 1);
+        }
+        String token = URLEncoder.encode(haToken.tokenWert(), StandardCharsets.UTF_8)
+            .replace("+", "%20");
+        String pfad = "/api/ha/foto/" + mitglied.getId() + "?k=" + token + "&v=" + FOTO_VERSION;
+        return basis.isEmpty() ? pfad : basis + pfad;
     }
 
     private long summeVon(List<StatistikDto.StatistikZeile> zeilen) {
